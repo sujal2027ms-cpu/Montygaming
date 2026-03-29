@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Cloud Drive UI</title>
+
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js"></script>
+
+<style>
+body{
+    margin:0;
+    font-family:Arial;
+    background:#0b1220;
+    color:white;
+}
+
+/* HEADER */
+header{
+    padding:20px;
+    font-size:22px;
+    font-weight:bold;
+    text-align:center;
+    background:#111a2e;
+}
+
+/* BUTTONS */
+button{
+    padding:10px 15px;
+    margin:10px;
+    border:none;
+    border-radius:10px;
+    cursor:pointer;
+    background:linear-gradient(90deg,#00c6ff,#0072ff);
+    color:white;
+    font-weight:bold;
+}
+
+/* UPLOAD BOX */
+.upload{
+    text-align:center;
+    padding:15px;
+}
+
+/* GRID */
+.grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
+    gap:15px;
+    padding:20px;
+}
+
+/* CARD */
+.card{
+    background:#111a2e;
+    border-radius:15px;
+    overflow:hidden;
+    transition:0.3s;
+    position:relative;
+}
+
+.card:hover{
+    transform:scale(1.05);
+}
+
+.card img{
+    width:100%;
+    height:150px;
+    object-fit:cover;
+}
+
+/* DELETE */
+.del{
+    position:absolute;
+    top:5px;
+    right:5px;
+    background:red;
+    border:none;
+    border-radius:50%;
+    width:25px;
+    height:25px;
+    color:white;
+    cursor:pointer;
+}
+
+/* LOADING */
+#loading{
+    text-align:center;
+    padding:10px;
+    display:none;
+}
+</style>
+</head>
+
+<body>
+
+<header>🌩️ My Drive Cloud</header>
+
+<div class="upload">
+    <button onclick="login()">Google Login</button>
+    <button onclick="logout()">Logout</button><br>
+
+    <input type="file" id="file">
+    <button onclick="upload()">Upload to Cloud</button>
+</div>
+
+<div id="loading">Loading...</div>
+<div id="grid" class="grid"></div>
+
+<script>
+
+/* FIREBASE CONFIG */
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  appId: "YOUR_APP_ID"
+};
+
+firebase.initializeApp(firebaseConfig);
+
+const auth = firebase.auth();
+const storage = firebase.storage();
+
+let user = null;
+
+/* LOGIN */
+function login(){
+    let provider = new firebase.auth.GoogleAuthProvider();
+
+    auth.signInWithPopup(provider).then(res=>{
+        user = res.user;
+        loadFiles();
+    });
+}
+
+/* LOGOUT */
+function logout(){
+    auth.signOut().then(()=>location.reload());
+}
+
+/* UPLOAD */
+function upload(){
+    if(!user){
+        alert("Login first");
+        return;
+    }
+
+    let file = document.getElementById("file").files[0];
+    if(!file) return alert("Select file");
+
+    let ref = storage.ref("drive/"+user.uid+"/"+Date.now()+"_"+file.name);
+
+    ref.put(file).then(()=>{
+        loadFiles();
+    });
+}
+
+/* LOAD FILES (UNLIMITED FEEL) */
+function loadFiles(){
+    if(!user) return;
+
+    document.getElementById("loading").style.display="block";
+
+    let ref = storage.ref("drive/"+user.uid);
+
+    ref.listAll().then(res=>{
+        let grid = document.getElementById("grid");
+        grid.innerHTML="";
+
+        res.items.forEach(item=>{
+            item.getDownloadURL().then(url=>{
+                let div = document.createElement("div");
+                div.className="card";
+
+                div.innerHTML=`
+                    <img src="${url}">
+                    <button class="del" onclick="del('${item.fullPath}')">X</button>
+                `;
+
+                grid.appendChild(div);
+            });
+        });
+
+        document.getElementById("loading").style.display="none";
+    });
+}
+
+/* DELETE */
+function del(path){
+    storage.ref(path).delete().then(()=>{
+        loadFiles();
+    });
+}
+
+</script>
+
+</body>
+</html>
