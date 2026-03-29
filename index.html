@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monty Form</title>
+
+<style>
+body {
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #ff9a9e, #fad0c4);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+.form-box {
+    background: white;
+    padding: 25px;
+    border-radius: 20px;
+    width: 330px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+input, textarea, select {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 10px;
+}
+button {
+    width: 100%;
+    padding: 12px;
+    background: #ff758c;
+    color: white;
+    border: none;
+    border-radius: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="form-box">
+<h2>Monty Form</h2>
+
+<form action="https://formsubmit.co/montysharma4305@gmail.com" method="POST" onsubmit="showPopup()">
+
+<input type="text" name="name" placeholder="Your Name" required>
+<input type="email" name="email" placeholder="Your Email" required>
+
+<select name="class" required>
+<option value="">Select Class</option>
+<option value="10">Class 10</option>
+<option value="11">Class 11</option>
+<option value="12">Class 12</option>
+</select>
+
+<select name="institution_type" required>
+<option value="">School or College</option>
+<option value="School">School</option>
+<option value="College">College</option>
+</select>
+
+<input type="text" name="institution_name" placeholder="School / College Name" required>
+
+<textarea name="message" placeholder="Your Message"></textarea>
+
+<input type="hidden" name="_captcha" value="false">
+<input type="hidden" name="_template" value="table">
+
+<button type="submit">Submit</button>
+
+</form>
+</div>
+
+<script>
+function showPopup(){
+    alert("✅ Form Submitted Successfully!");
+}
+</script>
+
+</body>
+</html>
