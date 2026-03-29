@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Mobile Photo Editor</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            text-align: center; 
+            background: #f0f0f0; 
+            margin: 0; 
+            padding: 10px;
+            touch-action: none; /* Prevent zoom/scroll interference */
+        }
+        #canvas { 
+            border: 2px solid #ccc; 
+            max-width: 95vw; 
+            max-height: 70vh; 
+            width: auto; 
+            height: auto;
+            cursor: grab; 
+            touch-action: none;
+            display: block;
+            margin: 0 auto;
+        }
+        #canvas:active { cursor: grabbing; }
+        .controls { 
+            margin: 20px 0; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center;
+            gap: 10px;
+        }
+        input[type="range"] { width: 80%; max-width: 300px; }
+        button { 
+            padding: 12px 24px; 
+            background: #007bff; 
+            color: white; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-size: 16px; /* Mobile friendly */
+            touch-action: manipulation;
+        }
+        button:hover, button:active { background: #0056b3; }
+        #upload { 
+            margin: 20px 0; 
+            padding: 12px; 
+            font-size: 16px;
+        }
+        .crop-area { 
+            position: absolute; 
+            border: 3px dashed red; 
+            pointer-events: none; 
+            display: none; 
+            background: rgba(255,0,0,0.1);
+        }
+        .container { position: relative; display: inline-block; margin: 10px auto; }
+    </style>
+</head>
+<body>
+    <h1>📱 Mobile Photo Editor</h1>
+    <p>Finger se drag karo, crop banao, brightness adjust karo.</p>
+    
+    <input type="file" id="upload" accept="image/*">
+    <div class="controls">
+        <label>Brightness: <input type="range" id="brightness" min="0" max="200" value="100" step="1"></label>
+        <br>
+        <button onclick="toggleCrop()">🌐 Crop Mode Toggle</button>
+        <button onclick="applyCrop()">✂️ Apply Crop</button>
+        <button onclick="resetImage()">🔄 Reset</button>
+        <button onclick="downloadImage()">💾 Download</button>
+    </div>
+    
+    <div class="container">
+        <canvas id="canvas"></canvas>
+        <div id="cropArea" class="crop-area"></div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const upload = document.getElementById('upload');
+        const brightnessSlider = document.getElementById('brightness');
+        const cropArea = document.getElementById('cropArea');
+        
+        let img = new Image();
+        let brightness = 1;
+        let isDragging = false;
+        let dragStart = { x: 0, y: 0 };
+        let dragPos = { x: 0, y: 0 };
+        let cropMode = false;
+        let cropStart = { x: 0, y: 0 };
+        let isCropping = false;
+        
+        // Resize canvas responsively
+        function resizeCanvas() {
+            const maxW = window.innerWidth * 0.95;
+            const maxH = window.innerHeight * 0.6;
+            canvas.width = Math.min(img.width || 800, maxW);
+            canvas.height = Math.min(img.height || 600, maxH);
+            draw();
+        }
+        
+        window.addEventListener('resize', resizeCanvas);
+        
+        // Image upload
+        upload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                img.src = event.target.result;
+                img.onload = () => {
+                    resizeCanvas();
+                    dragPos = { x: 0, y: 0 };
+                    draw();
+                };
+            };
+            reader.readAsDataURL(file);
+        });
+        
+        // Brightness
+        brightnessSlider.addEventListener('input', (e) => {
+            brightness = e.target.value / 100;
+            draw();
+        });
+        
+        // Draw
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            ctx.filter = `brightness(${brightness})`;
+            ctx.drawImage(img, dragPos.x, dragPos.y, canvas.width, canvas.height);
+            ctx.restore();
+        }
+        
+        // Mouse events
+        canvas.addEventListener('mousedown', startDrag);
+        canvas.addEventListener('mousemove', dragMove);
+        canvas.addEventListener('mouseup', endDrag);
+        
+        // Touch events for mobile
+        canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+        canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+        canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+        
+        function handleTouchStart(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            dragStart.x = touch.clientX - rect.left;
+            dragStart.y = touch.clientY - rect.top;
+            isDragging = true;
+            if (cropMode) {
+                cropStart.x = touch.clientX - rect.left;
+                cropStart.y = touch.clientY - rect.top;
+                cropArea.style.left = cropStart.x + 'px';
+                cropArea.style.top = cropStart.y + 'px';
+                cropArea.style.width = '0px';
+                cropArea.style.height = '0px';
+                isCropping = true;
+            }
+        }
+        
+        function handleTouchMove(e) {
+            e.preventDefault();
+            if (!isDragging) return;
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            const deltaX = touch.clientX - rect.left - dragStart.x;
+            const deltaY = touch.clientY - rect.top - dragStart.y;
+            dragPos.x += deltaX / 5; // Slower for touch
+            dragPos.y += deltaY / 5;
+            dragStart.x = touch.clientX - rect.left;
+            dragStart.y = touch.clientY - rect.top;
+            if (cropMode && isCropping) {
+                const width = touch.clientX - rect.left - cropStart.x;
+                const height = touch.clientY - rect.top - cropStart.y;
+                cropArea.style.width = Math.max(50, width) + 'px';
+                cropArea.style.height = Math.max(50, height) + 'px';
+                cropArea.style.left = (rect.left + cropStart.x) + 'px';
+                cropArea.style.top = (rect.top + cropStart.y) + 'px';
+            }
+            draw();
+        }
+        
+        function handleTouchEnd(e) {
+            e.preventDefault();
+            isDragging = false;
+            isCropping = false;
+        }
+        
+        function startDrag(e) {
+            const rect = canvas.getBoundingClientRect();
+            dragStart.x = e.clientX - rect.left;
+            dragStart.y = e.clientY - rect.top;
+            isDragging = true;
+        }
+        
+        function dragMove(e) {
+            if (isDragging) {
+                const rect = canvas.getBoundingClientRect();
+                const deltaX = e.clientX - rect.left - dragStart.x;
+                const deltaY = e.clientY - rect.top - dragStart.y;
+                dragPos.x += deltaX / 10;
+                dragPos.y += deltaY / 10;
+                dragStart.x = e.clientX - rect.left;
+                dragStart.y = e.clientY - rect.top;
+                draw();
+            }
+        }
+        
+        function endDrag() {
+            isDragging = false;
+        }
+        
+        // Crop functions same as before
+        function toggleCrop() {
+            cropMode = !cropMode;
+            cropArea.style.display = cropMode ? 'block' : 'none';
+        }
+        
+        function applyCrop() {
+            if (!cropMode) return;
+            const rect = canvas.getBoundingClientRect();
+            const left = parseInt(cropArea.style.left) - rect.left;
+            const top = parseInt(cropArea.style.top) - rect.top;
+            const width = parseInt(cropArea.style.width);
+            const height = parseInt(cropArea.style.height);
+            
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = width;
+            tempCanvas.height = height;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.filter = ctx.filter;
+            tempCtx.drawImage(canvas, left, top, width, height, 0, 0, width, height);
+            
+            canvas.width = width;
+            canvas.height = height;
+            ctx.drawImage(tempCanvas, 0, 0);
+            img.src = tempCanvas.toDataURL();
+            cropMode = false;
+            cropArea.style.display = 'none';
+            dragPos = { x: 0, y: 0 };
+        }
+        
+        function resetImage() {
+            dragPos = { x: 0, y: 0 };
+            brightness = 1;
+            brightnessSlider.value = 100;
+            resizeCanvas();
+        }
+        
+        function downloadImage() {
+            const link = document.createElement('a');
+            link.download = 'edited-photo.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+    </script>
+</body>
+</html>
