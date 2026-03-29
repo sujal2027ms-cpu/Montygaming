@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate Image Studio</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+    
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f8f9fa; padding: 20px; display: flex; justify-content: center; }
+        .card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 900px; text-align: center; }
+        
+        .img-area { width: 100%; height: 400px; background-color: #222; margin: 20px 0; border-radius: 10px; overflow: hidden; display: none; }
+        img { display: block; max-width: 100%; }
+
+        .editor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+        .filter-group { text-align: left; background: #f1f3f5; padding: 15px; border-radius: 10px; }
+        .filter-group label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
+        input[type="range"] { width: 100%; cursor: pointer; }
+
+        .btn-group { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 15px; }
+        .btn { padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-warning { background: #f39c12; color: white; }
+        .btn-danger { background: #e74c3c; color: white; }
+        .btn-success { background: #27ae60; color: white; text-decoration: none; display: none; }
+        
+        .btn:hover { opacity: 0.9; transform: scale(1.02); }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>🎨 Pro Image Studio</h2>
+    <p>Crop, Rotate, and Apply Filters</p>
+    
+    <input type="file" id="fileInput" accept="image/*" style="display: none;">
+    <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">Upload Photo</button>
+
+    <div class="img-area" id="imgArea">
+        <img id="imageToCrop">
+    </div>
+
+    <div id="controls" style="display: none;">
+        <div class="editor-grid">
+            <div class="filter-group">
+                <label>Brightness</label>
+                <input type="range" id="brightness" min="0" max="200" value="100">
+                <label>Contrast</label>
+                <input type="range" id="contrast" min="0" max="200" value="100">
+            </div>
+            <div class="filter-group">
+                <label>Grayscale (B&W)</label>
+                <input type="range" id="grayscale" min="0" max="100" value="0">
+                <label>Saturate</label>
+                <input type="range" id="saturate" min="0" max="200" value="100">
+            </div>
+        </div>
+
+        <div class="btn-group">
+            <button class="btn btn-warning" id="rotateLeft">↺ Rotate</button>
+            <button class="btn btn-warning" id="rotateRight">↻ Rotate</button>
+            <button class="btn btn-danger" id="resetBtn">⟲ Reset All</button>
+            <button class="btn btn-primary" id="cropBtn">Apply & Preview</button>
+        </div>
+    </div>
+
+    <div class="btn-group">
+        <a id="downloadBtn" class="btn btn-success">Download Final Image ↓</a>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+
+<script>
+    const fileInput = document.getElementById('fileInput');
+    const image = document.getElementById('imageToCrop');
+    const imgArea = document.getElementById('imgArea');
+    const controls = document.getElementById('controls');
+    const downloadBtn = document.getElementById('downloadBtn');
+    
+    let cropper;
+
+    // Filters logic
+    const brightness = document.getElementById('brightness');
+    const contrast = document.getElementById('contrast');
+    const grayscale = document.getElementById('grayscale');
+    const saturate = document.getElementById('saturate');
+
+    function applyFilters() {
+        const filterStr = `brightness(${brightness.value}%) contrast(${contrast.value}%) grayscale(${grayscale.value}%) saturate(${saturate.value}%)`;
+        // Cropper ke canvas container par filter lagayenge
+        const cropperCanvas = document.querySelector('.cropper-canvas img');
+        if(cropperCanvas) cropperCanvas.style.filter = filterStr;
+        image.style.filter = filterStr;
+    }
+
+    [brightness, contrast, grayscale, saturate].forEach(input => {
+        input.addEventListener('input', applyFilters);
+    });
+
+    fileInput.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                image.src = event.target.result;
+                if (cropper) cropper.destroy();
+
+                image.onload = () => {
+                    imgArea.style.display = 'block';
+                    controls.style.display = 'block';
+                    downloadBtn.style.display = 'none';
+
+                    cropper = new Cropper(image, {
+                        viewMode: 1,
+                        autoCropArea: 1,
+                        ready() { applyFilters(); }
+                    });
+                };
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    document.getElementById('rotateLeft').onclick = () => cropper.rotate(-90);
+    document.getElementById('rotateRight').onclick = () => cropper.rotate(90);
+    
+    document.getElementById('resetBtn').onclick = () => {
+        cropper.reset();
+        brightness.value = 100; contrast.value = 100; grayscale.value = 0; saturate.value = 100;
+        applyFilters();
+    };
+
+    document.getElementById('cropBtn').onclick = () => {
+        const canvas = cropper.getCroppedCanvas();
+        const ctx = canvas.getContext('2d');
+        
+        // Final download mein filter apply karne ke liye
+        ctx.filter = `brightness(${brightness.value}%) contrast(${contrast.value}%) grayscale(${grayscale.value}%) saturate(${saturate.value}%)`;
+        ctx.drawImage(canvas, 0, 0);
+
+        downloadBtn.href = canvas.toDataURL('image/png');
+        downloadBtn.download = 'pro-edited-photo.png';
+        downloadBtn.style.display = 'inline-block';
+        alert("Filters and Crop applied!");
+    };
+</script>
+
+</body>
+</html>
