@@ -8,7 +8,7 @@
 /* ROOT */
 :root{
   --logo-color:#2A7B9B;
-  --background-color:black;
+  --background-color:url("background.jpg");
   --nav-color:white
 }
 
@@ -86,9 +86,11 @@ h2{
   padding:20px;
   font-size:16px;
   color:whitesmoke;
-  line-height:2;
+  line-height:3;
 }
 
 body{
-  background:black;
+  background:var(--background-color);
+  background-size:cover;
+  background-repeat:no-repeat;
 }
