@@ -1,7 +1,14 @@
 *{margin:0;padding:0;user-select: none;
   -webkit-user-select: none;}
-.logo{background: #2A7B9B;
-background: linear-gradient(209deg, rgba(42, 123, 155, 1) 0%, rgba(28, 255, 123, 1) 100%, rgba(237, 221, 83, 1) 100%);color:white;padding:17px;font-weight: bolder;font-size: 25px;position: relative}
+         /*ROOT*/
+:root{--Logo-color:#2A7B9B;
+background: linear-gradient(209deg, rgba(42, 123, 155, 1) 0%, rgba(28, 255, 123, 1) 100%, rgba(237, 221, 83, 1);
+  --background-color:black;}
+          
+        /*Logo*/
+.logo{background:var(--logo-color);color:white;padding:17px;font-weight: bolder;font-size: 25px;position: relative}
+         /*Menu*/
+
 .Menu{position: absolute ;right:9px;top:16px;background: whitesmoke;padding: 10px;border-radius: 20px;box-shadow: 0 0 10px rgba(0,0,0,0.3);border: 1px solid black}
 .nav{display: none;position: absolute;background: aquamarine;padding:10px;right:0; height: 230px;margin-top: 15px;right:-5px}
 .nav ul a{padding: 40px;color:;padding:9px;margin: 20px;display: flex;font-size: 16px}
@@ -10,9 +17,11 @@ background: linear-gradient(209deg, rgba(42, 123, 155, 1) 0%, rgba(28, 255, 123,
 
 .Menu:hover .nav{display: block;color:black;font-weight: bold}
 h2{color:white;font-weight: bolder;padding-left: 10px}
-.nav ul a{text-decoration-line: none;color:red}
-
-.p1{padding: 20px;font-size: 16px;color: whitesmoke;line-height: 2 }
-body{background: black;}
-
+.nav ul a{text-decoration-line: none;color: Black}
 .nav ul a:hover{background: black;color:white;border-radius: 30px;text-align: center}
+
+      /*main-body*/
+.p1{padding: 20px;font-size: 16px;color: whitesmoke;line-height: 2 }
+body{background:var(--background-color);}
+
+
