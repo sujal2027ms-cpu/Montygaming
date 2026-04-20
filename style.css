@@ -1,8 +1,9 @@
 *{margin:0;padding:0;user-select: none;
   -webkit-user-select: none;}
+
          /*ROOT*/
 :root{--Logo-color:#2A7B9B;
-background: linear-gradient(209deg, rgba(42, 123, 155, 1) 0%, rgba(28, 255, 123, 1) 100%, rgba(237, 221, 83, 1);
+background: linear-gradient(209deg, rgba(42, 123, 155, 1) 0%, rgba(28, 255, 123, 1) 100%, rgba(237, 221, 83, 1));
   --background-color:black;}
           
         /*Logo*/
@@ -23,5 +24,3 @@ h2{color:white;font-weight: bolder;padding-left: 10px}
       /*main-body*/
 .p1{padding: 20px;font-size: 16px;color: whitesmoke;line-height: 2 }
 body{background:var(--background-color);}
-
-
