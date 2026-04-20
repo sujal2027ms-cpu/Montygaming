@@ -9,6 +9,7 @@
 :root{
   --logo-color:#2A7B9B;
   --background-color:black;
+  --nav-color:white
 }
 
 /* Logo */
@@ -36,7 +37,7 @@
 .nav{
   display:none;
   position:absolute;
-  background:aquamarine;
+  background:var(--nav-color);
   padding:10px;
   right:-5px;
   height:230px;
