@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Pro Gradient Builder v10 (Native HD Export Engine)</title>
+    <title>Pro Gradient Builder v11 (Desktop & TV Edition)</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root { --neon: #00f2fe; --glass: rgba(10, 10, 10, 0.6); --border: rgba(255, 255, 255, 0.1); }
+        :root { --neon: #00f2fe; --glass: rgba(10, 10, 10, 0.75); --border: rgba(255, 255, 255, 0.1); }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
         body { margin: 0; min-height: 100vh; font-family: 'Inter', sans-serif; overflow: hidden; background: #000; }
 
-        #bg-canvas { position: fixed; inset: 0; z-index: 1; }
+        #bg-canvas { position: fixed; inset: 0; z-index: 1; cursor: pointer; }
         
         #inner-bg { 
             width: 100%; height: 100%; 
@@ -27,35 +27,64 @@
         @keyframes flowAnim { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
         .anim-active { background-size: 300% 300% !important; animation: flowAnim var(--speed, 15s) ease-in-out infinite !important; }
 
-        .ui-element { transition: all 0.3s ease; z-index: 1000; }
-        .ui-hidden { opacity: 0 !important; pointer-events: none !important; transform: translateY(-15px); }
-        .sheet-hidden { transform: translateY(100%) !important; }
-
-        .top-bar { position: fixed; top: 8px; left: 8px; right: 8px; display: flex; gap: 5px; justify-content: flex-end; }
-        .btn-tiny { background: var(--glass); color: white; border: 1px solid var(--border); padding: 5px 8px; border-radius: 6px; font-size: 0.6rem; backdrop-filter: blur(15px); font-weight: 600; cursor: pointer; }
-
-        .bottom-sheet { 
-            position: fixed; bottom: 0; left: 0; right: 0; 
-            background: rgba(10, 10, 10, 0.85); backdrop-filter: blur(20px); 
-            border-top: 1px solid var(--border); padding: 6px 8px; 
-            max-height: 38vh; overflow-y: auto; border-radius: 15px 15px 0 0;
+        /* NAYA: Single Floating Tool Box */
+        .toolbox { 
+            position: fixed; 
+            top: 20px; 
+            right: 20px; 
+            width: 320px; /* Fixed width, fale ga nahi */
+            background: var(--glass); 
+            backdrop-filter: blur(25px); 
+            border: 1px solid var(--border); 
+            padding: 15px; 
+            border-radius: 16px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+            display: flex; 
+            flex-direction: column;
+            z-index: 1000;
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
         }
 
-        .nav { display: flex; gap: 4px; margin-bottom: 6px; position: sticky; top: 0; z-index: 10; }
-        .tab { background: rgba(255,255,255,0.05); color: #777; border: none; padding: 4px 10px; border-radius: 8px; font-size: 0.6rem; font-weight: 700; cursor: pointer; }
+        .toolbox.ui-hidden { opacity: 0; pointer-events: none; transform: scale(0.9) translate(20px, -20px); }
+
+        /* NAYA: Mobile Screen par Bottom Sheet ban jayega */
+        @media (max-width: 768px) {
+            .toolbox {
+                top: auto;
+                bottom: 0;
+                right: 0;
+                width: 100%;
+                border-radius: 20px 20px 0 0;
+                padding: 12px;
+                max-height: 50vh;
+            }
+            .toolbox.ui-hidden { transform: translateY(100%); }
+        }
+
+        /* Buttons & Layout */
+        .action-row { display: flex; gap: 8px; margin-bottom: 12px; }
+        .btn-tiny { flex: 1; justify-content: center; background: rgba(255,255,255,0.1); color: white; border: 1px solid var(--border); padding: 8px; border-radius: 8px; font-size: 0.65rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: 0.2s;}
+        .btn-tiny:hover { background: rgba(255,255,255,0.2); }
+
+        .nav { display: flex; gap: 6px; margin-bottom: 10px; }
+        .tab { flex: 1; background: rgba(255,255,255,0.05); color: #888; border: none; padding: 6px 10px; border-radius: 8px; font-size: 0.65rem; font-weight: 700; cursor: pointer; }
         .tab.active { background: #fff; color: #000; }
 
-        .card { background: rgba(255,255,255,0.03); border-radius: 8px; padding: 5px 8px; margin-bottom: 4px; border: 1px solid rgba(255,255,255,0.05); }
+        .card { background: rgba(255,255,255,0.03); border-radius: 10px; padding: 8px 10px; margin-bottom: 6px; border: 1px solid rgba(255,255,255,0.05); }
         
-        input[type="range"] { -webkit-appearance: none; width: 100%; height: 2px; background: rgba(255,255,255,0.1); border-radius: 5px; margin: 3px 0; }
-        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; background: #fff; border-radius: 50%; box-shadow: 0 0 5px var(--neon); cursor: pointer; }
+        input[type="range"] { -webkit-appearance: none; width: 100%; height: 3px; background: rgba(255,255,255,0.1); border-radius: 5px; margin: 5px 0; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; background: #fff; border-radius: 50%; box-shadow: 0 0 5px var(--neon); cursor: pointer; }
 
-        .color-circle { width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid #fff; position: relative; overflow: hidden; flex-shrink: 0; }
+        .color-circle { width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid #fff; position: relative; overflow: hidden; flex-shrink: 0; }
         input[type="color"] { position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; cursor: pointer; }
         
-        .btn-act { background: rgba(255,255,255,0.06); color: white; border: 1px solid rgba(255,255,255,0.08); padding: 6px; border-radius: 8px; font-size: 0.6rem; font-weight: 700; width: 100%; display: flex; align-items: center; justify-content: center; gap: 5px; margin-bottom: 4px; cursor: pointer;}
-        #css-box { font-size: 0.5rem; color: var(--neon); background: rgba(0,0,0,0.5); padding: 8px; border-radius: 8px; word-break: break-all; font-family: monospace; border: 1px solid var(--border); white-space: pre-wrap; margin-top: 4px;}
-        .val-badge { background: rgba(255,255,255,0.1); padding: 1px 3px; border-radius: 3px; font-family: monospace; font-size: 0.5rem; color: #eee;}
+        .btn-act { background: rgba(255,255,255,0.06); color: white; border: 1px solid rgba(255,255,255,0.08); padding: 8px; border-radius: 8px; font-size: 0.65rem; font-weight: 700; width: 100%; display: flex; align-items: center; justify-content: center; gap: 5px; margin-bottom: 4px; cursor: pointer;}
+        .btn-act:hover { background: rgba(255,255,255,0.1); }
+        
+        #css-box { font-size: 0.55rem; color: var(--neon); background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px; word-break: break-all; font-family: monospace; border: 1px solid var(--border); white-space: pre-wrap; margin-top: 5px;}
+        .val-badge { background: rgba(255,255,255,0.1); padding: 2px 5px; border-radius: 4px; font-family: monospace; font-size: 0.55rem; color: #eee;}
     </style>
 </head>
 <body>
@@ -64,26 +93,31 @@
     <div id="inner-bg"></div>
 </div>
 
-<div class="top-bar ui-element" id="top-bar">
-    <button id="css-btn" class="btn-tiny" onclick="copyCSS(event)" style="background: #fff; color: #000;">COPY CSS</button>
-    <button id="save-btn" class="btn-tiny" onclick="downloadNativeImg(event)" style="background: #22c55e; color: #fff; border:none;"><i class="fa-solid fa-download"></i> HD SAVE</button>
-</div>
+<div class="toolbox" id="toolbox">
+    
+    <div class="action-row">
+        <button id="css-btn" class="btn-tiny" onclick="copyCSS(event)" style="background: #fff; color: #000;">
+            <i class="fa-solid fa-code"></i> COPY CSS
+        </button>
+        <button id="save-btn" class="btn-tiny" onclick="downloadNativeImg(event)" style="background: #22c55e; color: #fff; border:none;">
+            <i class="fa-solid fa-download"></i> HD SAVE
+        </button>
+    </div>
 
-<div class="bottom-sheet ui-element" id="sheet" onclick="event.stopPropagation()">
     <div class="nav">
         <button class="tab active" onclick="tab(event, 'col')">EDIT</button>
-        <button class="tab" onclick="tab(event, 'fx')">FX</button>
+        <button class="tab" onclick="tab(event, 'fx')">EFFECTS</button>
     </div>
 
     <div id="col" class="section">
-        <div class="card" style="display:flex; gap: 10px;">
-            <div style="flex:1; display:flex; align-items:center; gap:5px;">
-                <label style="color:#888; font-size:0.5rem;">ANG</label>
+        <div class="card" style="display:flex; gap: 15px;">
+            <div style="flex:1; display:flex; align-items:center; gap:6px;">
+                <label style="color:#888; font-size:0.55rem; font-weight:bold;">ANG</label>
                 <input type="range" id="tool-angle" min="0" max="360" value="135" oninput="gen()">
                 <span class="val-badge" id="angle-disp">135°</span>
             </div>
-            <div style="flex:1; display:flex; align-items:center; gap:5px;">
-                <label style="color:#888; font-size:0.5rem;">BLR</label>
+            <div style="flex:1; display:flex; align-items:center; gap:6px;">
+                <label style="color:#888; font-size:0.55rem; font-weight:bold;">BLR</label>
                 <input type="range" id="tool-blur" min="0" max="40" value="0" oninput="gen()">
             </div>
         </div>
@@ -94,10 +128,10 @@
 
     <div id="fx" class="section" style="display:none;">
         <div class="card">
-            <div style="display:flex; align-items:center; gap:8px;">
-                <label style="color:#888; font-size:0.5rem;">SPEED</label>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <label style="color:#888; font-size:0.55rem; font-weight:bold;">SPEED</label>
                 <input type="range" id="speed" min="2" max="30" value="10" onchange="gen()">
-                <button id="anim-toggle" class="btn-tiny" onclick="toggleAnimation()" style="padding:4px 8px; background: #00f2fe; color:#000;">PLAY</button>
+                <button id="anim-toggle" class="btn-tiny" onclick="toggleAnimation()" style="background: #00f2fe; color:#000; padding:6px 12px; margin:0; flex:none;">PLAY</button>
             </div>
         </div>
         <div id="css-box">...</div>
@@ -112,7 +146,10 @@
     ];
     let isAnimOn = false;
 
-    function toggleUI() { document.getElementById('top-bar').classList.toggle('ui-hidden'); document.getElementById('sheet').classList.toggle('sheet-hidden'); }
+    function toggleUI() { 
+        document.getElementById('toolbox').classList.toggle('ui-hidden'); 
+    }
+    
     function tab(e, name) {
         document.querySelectorAll('.section').forEach(x => x.style.display = 'none');
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -150,23 +187,23 @@
             div.className = 'card';
             div.style.display = 'flex';
             div.style.alignItems = 'center';
-            div.style.gap = '6px';
+            div.style.gap = '8px';
             
             div.innerHTML = `
                 <div class="color-circle" style="background:${l.h}"><input type="color" value="${l.h}" oninput="upd(${i},'h',this.value)"></div>
-                <div style="flex:1; display:flex; flex-direction:column; gap:2px;">
-                    <div style="display:flex; align-items:center; gap:4px;">
-                        <span style="color:#666; font-size:0.45rem; width:10px;">P</span>
+                <div style="flex:1; display:flex; flex-direction:column; gap:4px;">
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <span style="color:#666; font-size:0.5rem; font-weight:bold; width:12px;">P</span>
                         <input type="range" min="0" max="100" value="${l.p}" oninput="upd(${i},'p',this.value)">
-                        <span id="pos-badge-${i}" style="color:#eee; font-size:0.5rem; width:18px; text-align:right;">${l.p}%</span>
+                        <span id="pos-badge-${i}" style="color:#eee; font-size:0.5rem; width:22px; text-align:right;">${l.p}%</span>
                     </div>
-                    <div style="display:flex; align-items:center; gap:4px;">
-                        <span style="color:#666; font-size:0.45rem; width:10px;">O</span>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <span style="color:#666; font-size:0.5rem; font-weight:bold; width:12px;">O</span>
                         <input type="range" min="0" max="100" value="${l.o}" oninput="upd(${i},'o',this.value)">
-                        <span id="op-badge-${i}" style="color:#eee; font-size:0.5rem; width:18px; text-align:right;">${l.o}%</span>
+                        <span id="op-badge-${i}" style="color:#eee; font-size:0.5rem; width:22px; text-align:right;">${l.o}%</span>
                     </div>
                 </div>
-                <i class="fa-solid fa-times" onclick="rem(${i})" style="color:#ff4757; font-size:0.7rem; cursor:pointer; padding: 0 5px;"></i>
+                <i class="fa-solid fa-times" onclick="rem(${i})" style="color:#ff4757; font-size:0.8rem; cursor:pointer; padding: 5px;"></i>
             `;
             list.appendChild(div);
         });
@@ -175,9 +212,14 @@
 
     function upd(i, k, v) { 
         layers[i][k] = (k === 'p' || k === 'o') ? parseFloat(v) : v; 
-        if(k === 'h') document.querySelectorAll('.color-circle')[i].style.background = v;
-        else if (k === 'p') document.getElementById(`pos-badge-${i}`).innerText = v + '%';
-        else if (k === 'o') document.getElementById(`op-badge-${i}`).innerText = v + '%';
+        
+        if(k === 'h') {
+            document.querySelectorAll('.color-circle')[i].style.background = v;
+        } else if (k === 'p') {
+            document.getElementById(`pos-badge-${i}`).innerText = v + '%';
+        } else if (k === 'o') {
+            document.getElementById(`op-badge-${i}`).innerText = v + '%';
+        }
         gen(); 
     }
 
@@ -214,23 +256,32 @@
         textArea.value = document.getElementById('css-box').innerText;
         document.body.appendChild(textArea); textArea.select();
         document.execCommand('copy'); document.body.removeChild(textArea);
+        
         const b = document.getElementById('css-btn'); 
+        const oldHTML = b.innerHTML;
         b.innerHTML = `<i class="fa-solid fa-check"></i> COPIED`;
         b.style.background = "#22c55e"; b.style.color = "#fff";
-        setTimeout(() => { b.innerHTML = "COPY CSS"; b.style.background = "#fff"; b.style.color = "#000"; }, 1500);
+        
+        setTimeout(() => { 
+            b.innerHTML = oldHTML; 
+            b.style.background = "#fff"; 
+            b.style.color = "#000"; 
+        }, 1500);
     }
 
-    // NAYA: 100% Perfect Native Canvas Export System (NO HTML2CANVAS)
     function downloadNativeImg(e) {
         e.stopPropagation();
         const btn = document.getElementById('save-btn');
+        const toolbox = document.getElementById('toolbox');
         const originalHTML = btn.innerHTML;
         btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> SAVING...`;
 
         setTimeout(() => {
             try {
+                // Completely hide the toolbox temporarily
+                toolbox.style.display = 'none';
+
                 const canvas = document.createElement('canvas');
-                // HD Scale (2x) for high quality
                 const scale = 2; 
                 const w = window.innerWidth * scale;
                 const h = window.innerHeight * scale;
@@ -241,14 +292,11 @@
                 const angle = parseInt(document.getElementById('tool-angle').value);
                 const blur = parseInt(document.getElementById('tool-blur').value);
                 
-                // Apply Real Canvas Blur (HD scaled)
                 if(blur > 0) ctx.filter = `blur(${blur * scale}px)`;
 
-                // Math to exactly match CSS Linear-Gradient Angle
                 ctx.translate(w/2, h/2);
                 ctx.rotate(angle * Math.PI / 180);
                 
-                // Draw gradient from bottom to top to match CSS behavior
                 const size = Math.sqrt(w*w + h*h);
                 const grd = ctx.createLinearGradient(0, size/2, 0, -size/2);
 
@@ -258,14 +306,11 @@
                 });
 
                 ctx.fillStyle = grd;
-                // Draw a massive rect so edges don't show when blurred
                 ctx.fillRect(-size, -size, size*2, size*2);
 
-                // Reset logic for Noise overlay
                 ctx.resetTransform();
                 ctx.filter = 'none';
 
-                // Add Noise Pattern just like CSS
                 const img = new Image();
                 img.crossOrigin = "Anonymous";
                 img.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAX0lEQVQYV2N89+7dfwYc4P379/8ZEONgBpoIcgGIfPjwof8sXwYGIAGQBpA8SDwIQQHkg8SAEshmITuB7AAJIHsB2QuSBiEogOyHJBikG0UhyAVQhSGxIA2IjiIXgBwAABk3Q27+c7IAAAAASUVORK5CYII=";
@@ -277,21 +322,24 @@
                     ctx.fillStyle = pattern;
                     ctx.fillRect(0, 0, w, h);
 
-                    // Force Download
                     const a = document.createElement('a');
                     a.download = 'monty-pro-gradient.png';
                     a.href = canvas.toDataURL('image/png', 1.0);
                     a.click();
                     
+                    // Show toolbox back
+                    toolbox.style.display = 'flex';
                     btn.innerHTML = `<i class="fa-solid fa-check"></i> SAVED!`;
                     setTimeout(() => btn.innerHTML = originalHTML, 1500);
                 };
             } catch (err) {
                 alert("Download Error: Kripya try again karein.");
+                toolbox.style.display = 'flex';
                 btn.innerHTML = originalHTML;
             }
         }, 100);
     }
+    
     render();
 </script>
 </body>
