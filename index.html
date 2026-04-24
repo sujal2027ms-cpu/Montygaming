@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Pro Gradient Builder v12 (TV & Universal Edition)</title>
+    <title>Pro Gradient Builder v13 (TV Mouse Fixed)</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root { --neon: #00f2fe; --glass: rgba(10, 10, 10, 0.75); --border: rgba(255, 255, 255, 0.1); }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
         body { margin: 0; padding: 0; min-height: 100vh; font-family: 'Inter', sans-serif; overflow: hidden; background: #000; }
 
-        /* FIX: TV ke liye explicitly Width, Height, Top, Left set kiya hai */
         #bg-canvas { 
             position: fixed; 
             top: 0; left: 0; right: 0; bottom: 0; 
@@ -24,7 +23,6 @@
             background-size: 100% 100%;
         }
         
-        /* FIX: TV par mix-blend-mode crash karta hai, isliye sirf opacity rakhi hai */
         #inner-bg::before { 
             content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
             opacity: 0.1; pointer-events: none; 
@@ -39,7 +37,7 @@
             position: fixed; 
             top: 20px; 
             right: 20px; 
-            width: 320px; 
+            width: 340px; /* Thoda aur jagah di sliders ke liye */
             background: var(--glass); 
             backdrop-filter: blur(25px); 
             border: 1px solid var(--border); 
@@ -61,33 +59,58 @@
                 top: auto; bottom: 0; right: 0; left: 0;
                 width: 100%;
                 border-radius: 20px 20px 0 0;
-                padding: 12px;
+                padding: 15px;
                 max-height: 50vh;
             }
             .toolbox.ui-hidden { transform: translateY(100%); }
         }
 
         .action-row { display: flex; gap: 8px; margin-bottom: 12px; }
-        .btn-tiny { flex: 1; justify-content: center; background: rgba(255,255,255,0.1); color: white; border: 1px solid var(--border); padding: 8px; border-radius: 8px; font-size: 0.65rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: 0.2s;}
+        .btn-tiny { flex: 1; justify-content: center; background: rgba(255,255,255,0.1); color: white; border: 1px solid var(--border); padding: 10px; border-radius: 8px; font-size: 0.7rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: 0.2s;}
         .btn-tiny:hover { background: rgba(255,255,255,0.2); }
 
-        .nav { display: flex; gap: 6px; margin-bottom: 10px; }
-        .tab { flex: 1; background: rgba(255,255,255,0.05); color: #888; border: none; padding: 6px 10px; border-radius: 8px; font-size: 0.65rem; font-weight: 700; cursor: pointer; }
+        .nav { display: flex; gap: 6px; margin-bottom: 12px; }
+        .tab { flex: 1; background: rgba(255,255,255,0.05); color: #888; border: none; padding: 8px 10px; border-radius: 8px; font-size: 0.7rem; font-weight: 700; cursor: pointer; }
         .tab.active { background: #fff; color: #000; }
 
-        .card { background: rgba(255,255,255,0.03); border-radius: 10px; padding: 8px 10px; margin-bottom: 6px; border: 1px solid rgba(255,255,255,0.05); }
+        .card { background: rgba(255,255,255,0.03); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.05); }
         
-        input[type="range"] { -webkit-appearance: none; width: 100%; height: 3px; background: rgba(255,255,255,0.1); border-radius: 5px; margin: 5px 0; }
-        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; background: #fff; border-radius: 50%; box-shadow: 0 0 5px var(--neon); cursor: pointer; }
+        /* FIX: TV MOUSE KE LIYE SLIDER KO BADA (THICK) KIYA GAYA HAI */
+        input[type="range"] { 
+            -webkit-appearance: none; 
+            width: 100%; 
+            height: 8px; /* Pehle 3px tha, ab click karna aasaan hai */
+            background: rgba(255,255,255,0.15); 
+            border-radius: 10px; 
+            margin: 8px 0; 
+            cursor: pointer; 
+        }
+        
+        /* FIX: TV D-Pad Focus Outline */
+        input[type="range"]:focus {
+            outline: 2px solid rgba(0, 242, 254, 0.6);
+            background: rgba(255,255,255,0.25);
+        }
 
-        .color-circle { width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid #fff; position: relative; overflow: hidden; flex-shrink: 0; }
+        /* FIX: Thumb (Gola) ko bada kiya taaki pakadne mein asani ho */
+        input[type="range"]::-webkit-slider-thumb { 
+            -webkit-appearance: none; 
+            width: 20px; /* Pehle 14px tha */
+            height: 20px; 
+            background: #fff; 
+            border-radius: 50%; 
+            box-shadow: 0 0 8px var(--neon); 
+            cursor: pointer; 
+        }
+
+        .color-circle { width: 28px; height: 28px; border-radius: 50%; border: 2px solid #fff; position: relative; overflow: hidden; flex-shrink: 0; cursor: pointer;}
         input[type="color"] { position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; cursor: pointer; }
         
-        .btn-act { background: rgba(255,255,255,0.06); color: white; border: 1px solid rgba(255,255,255,0.08); padding: 8px; border-radius: 8px; font-size: 0.65rem; font-weight: 700; width: 100%; display: flex; align-items: center; justify-content: center; gap: 5px; margin-bottom: 4px; cursor: pointer;}
+        .btn-act { background: rgba(255,255,255,0.06); color: white; border: 1px solid rgba(255,255,255,0.08); padding: 10px; border-radius: 8px; font-size: 0.7rem; font-weight: 700; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 4px; cursor: pointer;}
         .btn-act:hover { background: rgba(255,255,255,0.1); }
         
-        #css-box { font-size: 0.55rem; color: var(--neon); background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px; word-break: break-all; font-family: monospace; border: 1px solid var(--border); white-space: pre-wrap; margin-top: 5px;}
-        .val-badge { background: rgba(255,255,255,0.1); padding: 2px 5px; border-radius: 4px; font-family: monospace; font-size: 0.55rem; color: #eee;}
+        #css-box { font-size: 0.6rem; color: var(--neon); background: rgba(0,0,0,0.5); padding: 12px; border-radius: 8px; word-break: break-all; font-family: monospace; border: 1px solid var(--border); white-space: pre-wrap; margin-top: 8px;}
+        .val-badge { background: rgba(255,255,255,0.1); padding: 3px 6px; border-radius: 4px; font-family: monospace; font-size: 0.6rem; color: #eee;}
     </style>
 </head>
 <body>
@@ -113,13 +136,13 @@
 
     <div id="col" class="section">
         <div class="card" style="display:flex; gap: 15px;">
-            <div style="flex:1; display:flex; align-items:center; gap:6px;">
-                <label style="color:#888; font-size:0.55rem; font-weight:bold;">ANG</label>
+            <div style="flex:1; display:flex; align-items:center; gap:8px;">
+                <label style="color:#888; font-size:0.6rem; font-weight:bold;">ANG</label>
                 <input type="range" id="tool-angle" min="0" max="360" value="135" oninput="gen()">
                 <span class="val-badge" id="angle-disp">135°</span>
             </div>
-            <div style="flex:1; display:flex; align-items:center; gap:6px;">
-                <label style="color:#888; font-size:0.55rem; font-weight:bold;">BLR</label>
+            <div style="flex:1; display:flex; align-items:center; gap:8px;">
+                <label style="color:#888; font-size:0.6rem; font-weight:bold;">BLR</label>
                 <input type="range" id="tool-blur" min="0" max="40" value="0" oninput="gen()">
             </div>
         </div>
@@ -130,10 +153,10 @@
 
     <div id="fx" class="section" style="display:none;">
         <div class="card">
-            <div style="display:flex; align-items:center; gap:10px;">
-                <label style="color:#888; font-size:0.55rem; font-weight:bold;">SPEED</label>
+            <div style="display:flex; align-items:center; gap:12px;">
+                <label style="color:#888; font-size:0.6rem; font-weight:bold;">SPEED</label>
                 <input type="range" id="speed" min="2" max="30" value="10" onchange="gen()">
-                <button id="anim-toggle" class="btn-tiny" onclick="toggleAnimation()" style="background: #00f2fe; color:#000; padding:6px 12px; margin:0; flex:none;">PLAY</button>
+                <button id="anim-toggle" class="btn-tiny" onclick="toggleAnimation()" style="background: #00f2fe; color:#000; padding:8px 15px; margin:0; flex:none;">PLAY</button>
             </div>
         </div>
         <div id="css-box">...</div>
@@ -189,23 +212,23 @@
             div.className = 'card';
             div.style.display = 'flex';
             div.style.alignItems = 'center';
-            div.style.gap = '8px';
+            div.style.gap = '12px';
             
             div.innerHTML = `
                 <div class="color-circle" style="background:${l.h}"><input type="color" value="${l.h}" oninput="upd(${i},'h',this.value)"></div>
-                <div style="flex:1; display:flex; flex-direction:column; gap:4px;">
-                    <div style="display:flex; align-items:center; gap:6px;">
-                        <span style="color:#666; font-size:0.5rem; font-weight:bold; width:12px;">P</span>
+                <div style="flex:1; display:flex; flex-direction:column; gap:6px;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span style="color:#666; font-size:0.6rem; font-weight:bold; width:15px;">POS</span>
                         <input type="range" min="0" max="100" value="${l.p}" oninput="upd(${i},'p',this.value)">
-                        <span id="pos-badge-${i}" style="color:#eee; font-size:0.5rem; width:22px; text-align:right;">${l.p}%</span>
+                        <span id="pos-badge-${i}" style="color:#eee; font-size:0.6rem; width:28px; text-align:right;">${l.p}%</span>
                     </div>
-                    <div style="display:flex; align-items:center; gap:6px;">
-                        <span style="color:#666; font-size:0.5rem; font-weight:bold; width:12px;">O</span>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span style="color:#666; font-size:0.6rem; font-weight:bold; width:15px;">OPC</span>
                         <input type="range" min="0" max="100" value="${l.o}" oninput="upd(${i},'o',this.value)">
-                        <span id="op-badge-${i}" style="color:#eee; font-size:0.5rem; width:22px; text-align:right;">${l.o}%</span>
+                        <span id="op-badge-${i}" style="color:#eee; font-size:0.6rem; width:28px; text-align:right;">${l.o}%</span>
                     </div>
                 </div>
-                <i class="fa-solid fa-times" onclick="rem(${i})" style="color:#ff4757; font-size:0.8rem; cursor:pointer; padding: 5px;"></i>
+                <i class="fa-solid fa-times" onclick="rem(${i})" style="color:#ff4757; font-size:0.9rem; cursor:pointer; padding: 5px;"></i>
             `;
             list.appendChild(div);
         });
