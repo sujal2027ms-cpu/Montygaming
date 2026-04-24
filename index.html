@@ -3,23 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Pro Gradient Builder v11 (Desktop & TV Edition)</title>
+    <title>Pro Gradient Builder v12 (TV & Universal Edition)</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root { --neon: #00f2fe; --glass: rgba(10, 10, 10, 0.75); --border: rgba(255, 255, 255, 0.1); }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
-        body { margin: 0; min-height: 100vh; font-family: 'Inter', sans-serif; overflow: hidden; background: #000; }
+        body { margin: 0; padding: 0; min-height: 100vh; font-family: 'Inter', sans-serif; overflow: hidden; background: #000; }
 
-        #bg-canvas { position: fixed; inset: 0; z-index: 1; cursor: pointer; }
+        /* FIX: TV ke liye explicitly Width, Height, Top, Left set kiya hai */
+        #bg-canvas { 
+            position: fixed; 
+            top: 0; left: 0; right: 0; bottom: 0; 
+            width: 100vw; height: 100vh; 
+            z-index: 1; cursor: pointer; 
+        }
         
         #inner-bg { 
             width: 100%; height: 100%; 
-            background-size: 100% 100%; position: relative; 
-            will-change: background-image, filter;
+            position: absolute; top: 0; left: 0;
+            background-size: 100% 100%;
         }
         
+        /* FIX: TV par mix-blend-mode crash karta hai, isliye sirf opacity rakhi hai */
         #inner-bg::before { 
-            content: ""; position: absolute; inset: 0; opacity: 0.15; pointer-events: none; mix-blend-mode: overlay;
+            content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            opacity: 0.1; pointer-events: none; 
             background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAX0lEQVQYV2N89+7dfwYc4P379/8ZEONgBpoIcgGIfPjwof8sXwYGIAGQBpA8SDwIQQHkg8SAEshmITuB7AAJIHsB2QuSBiEogOyHJBikG0UhyAVQhSGxIA2IjiIXgBwAABk3Q27+c7IAAAAASUVORK5CYII="); 
             background-repeat: repeat;
         }
@@ -27,12 +35,11 @@
         @keyframes flowAnim { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
         .anim-active { background-size: 300% 300% !important; animation: flowAnim var(--speed, 15s) ease-in-out infinite !important; }
 
-        /* NAYA: Single Floating Tool Box */
         .toolbox { 
             position: fixed; 
             top: 20px; 
             right: 20px; 
-            width: 320px; /* Fixed width, fale ga nahi */
+            width: 320px; 
             background: var(--glass); 
             backdrop-filter: blur(25px); 
             border: 1px solid var(--border); 
@@ -49,12 +56,9 @@
 
         .toolbox.ui-hidden { opacity: 0; pointer-events: none; transform: scale(0.9) translate(20px, -20px); }
 
-        /* NAYA: Mobile Screen par Bottom Sheet ban jayega */
         @media (max-width: 768px) {
             .toolbox {
-                top: auto;
-                bottom: 0;
-                right: 0;
+                top: auto; bottom: 0; right: 0; left: 0;
                 width: 100%;
                 border-radius: 20px 20px 0 0;
                 padding: 12px;
@@ -63,7 +67,6 @@
             .toolbox.ui-hidden { transform: translateY(100%); }
         }
 
-        /* Buttons & Layout */
         .action-row { display: flex; gap: 8px; margin-bottom: 12px; }
         .btn-tiny { flex: 1; justify-content: center; background: rgba(255,255,255,0.1); color: white; border: 1px solid var(--border); padding: 8px; border-radius: 8px; font-size: 0.65rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: 0.2s;}
         .btn-tiny:hover { background: rgba(255,255,255,0.2); }
@@ -94,7 +97,6 @@
 </div>
 
 <div class="toolbox" id="toolbox">
-    
     <div class="action-row">
         <button id="css-btn" class="btn-tiny" onclick="copyCSS(event)" style="background: #fff; color: #000;">
             <i class="fa-solid fa-code"></i> COPY CSS
@@ -278,7 +280,6 @@
 
         setTimeout(() => {
             try {
-                // Completely hide the toolbox temporarily
                 toolbox.style.display = 'none';
 
                 const canvas = document.createElement('canvas');
@@ -327,7 +328,6 @@
                     a.href = canvas.toDataURL('image/png', 1.0);
                     a.click();
                     
-                    // Show toolbox back
                     toolbox.style.display = 'flex';
                     btn.innerHTML = `<i class="fa-solid fa-check"></i> SAVED!`;
                     setTimeout(() => btn.innerHTML = originalHTML, 1500);
