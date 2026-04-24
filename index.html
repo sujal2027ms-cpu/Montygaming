@@ -3,25 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Pro Gradient Builder v9.3 (Ultra Smooth & HD Export)</title>
+    <title>Pro Gradient Builder v10 (Native HD Export Engine)</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root { --neon: #00f2fe; --glass: rgba(10, 10, 10, 0.6); --border: rgba(255, 255, 255, 0.1); }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
         body { margin: 0; min-height: 100vh; font-family: 'Inter', sans-serif; overflow: hidden; background: #000; }
 
-        /* Background Area - Targeted specifically for Download */
         #bg-canvas { position: fixed; inset: 0; z-index: 1; }
         
-        /* FIX: Removed transition for INSTANT (zero lag) slider feedback. Added will-change for 60fps performance */
         #inner-bg { 
             width: 100%; height: 100%; 
             background-size: 100% 100%; position: relative; 
             will-change: background-image, filter;
         }
         
-        /* FIX: Replaced complex SVG filter with an HTML2Canvas-friendly Base64 PNG Noise */
         #inner-bg::before { 
             content: ""; position: absolute; inset: 0; opacity: 0.15; pointer-events: none; mix-blend-mode: overlay;
             background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAX0lEQVQYV2N89+7dfwYc4P379/8ZEONgBpoIcgGIfPjwof8sXwYGIAGQBpA8SDwIQQHkg8SAEshmITuB7AAJIHsB2QuSBiEogOyHJBikG0UhyAVQhSGxIA2IjiIXgBwAABk3Q27+c7IAAAAASUVORK5CYII="); 
@@ -68,12 +64,12 @@
     <div id="inner-bg"></div>
 </div>
 
-<div class="top-bar ui-element" id="top-bar" data-html2canvas-ignore>
+<div class="top-bar ui-element" id="top-bar">
     <button id="css-btn" class="btn-tiny" onclick="copyCSS(event)" style="background: #fff; color: #000;">COPY CSS</button>
-    <button class="btn-tiny" onclick="downloadImg(event)" style="background: #22c55e; color: #fff; border:none;"><i class="fa-solid fa-download"></i> HD SAVE</button>
+    <button id="save-btn" class="btn-tiny" onclick="downloadNativeImg(event)" style="background: #22c55e; color: #fff; border:none;"><i class="fa-solid fa-download"></i> HD SAVE</button>
 </div>
 
-<div class="bottom-sheet ui-element" id="sheet" onclick="event.stopPropagation()" data-html2canvas-ignore>
+<div class="bottom-sheet ui-element" id="sheet" onclick="event.stopPropagation()">
     <div class="nav">
         <button class="tab active" onclick="tab(event, 'col')">EDIT</button>
         <button class="tab" onclick="tab(event, 'fx')">FX</button>
@@ -179,14 +175,9 @@
 
     function upd(i, k, v) { 
         layers[i][k] = (k === 'p' || k === 'o') ? parseFloat(v) : v; 
-        
-        if(k === 'h') {
-            document.querySelectorAll('.color-circle')[i].style.background = v;
-        } else if (k === 'p') {
-            document.getElementById(`pos-badge-${i}`).innerText = v + '%';
-        } else if (k === 'o') {
-            document.getElementById(`op-badge-${i}`).innerText = v + '%';
-        }
+        if(k === 'h') document.querySelectorAll('.color-circle')[i].style.background = v;
+        else if (k === 'p') document.getElementById(`pos-badge-${i}`).innerText = v + '%';
+        else if (k === 'o') document.getElementById(`op-badge-${i}`).innerText = v + '%';
         gen(); 
     }
 
@@ -212,7 +203,7 @@
         if (bl > 0) css += `filter: blur(${bl}px);\n`;
         if (isAnimOn) {
             css += `background-size: 300% 300%;\nanimation: flowAnim ${speed}s ease infinite;\n\n`;
-            css += `/* Keyframes */\n@keyframes flowAnim {\n  0% { background-position: 0% 50%; }\n  50% { background-position: 100% 50%; }\n  100% { background-position: 0% 50%; }\n}`;
+            css += `@keyframes flowAnim {\n  0% { background-position: 0% 50%; }\n  50% { background-position: 100% 50%; }\n  100% { background-position: 0% 50%; }\n}`;
         }
         document.getElementById('css-box').innerText = css;
     }
@@ -229,46 +220,77 @@
         setTimeout(() => { b.innerHTML = "COPY CSS"; b.style.background = "#fff"; b.style.color = "#000"; }, 1500);
     }
 
-    // FIX: Ultra Reliable Download Logic
-    function downloadImg(e) {
+    // NAYA: 100% Perfect Native Canvas Export System (NO HTML2CANVAS)
+    function downloadNativeImg(e) {
         e.stopPropagation();
-        const sheet = document.getElementById('sheet');
-        const topBar = document.getElementById('top-bar'); 
-        
-        // Hide UI immediately
-        sheet.style.display = 'none';
-        topBar.style.display = 'none';
-        
-        // Stop animation for a fraction of a second to take a sharp photo
-        const bgInner = document.getElementById('inner-bg');
-        const wasAnimOn = isAnimOn;
-        if(wasAnimOn) bgInner.classList.remove('anim-active');
+        const btn = document.getElementById('save-btn');
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> SAVING...`;
 
         setTimeout(() => {
-            // Take screenshot of #bg-canvas instead of document.body
-            const targetElement = document.getElementById('bg-canvas');
-            
-            html2canvas(targetElement, {
-                scale: 2, // HD Quality
-                useCORS: true,
-                allowTaint: true,
-                width: window.innerWidth,
-                height: window.innerHeight,
-                windowWidth: window.innerWidth,
-                windowHeight: window.innerHeight
-            }).then(canvas => {
-                const a = document.createElement('a'); 
-                a.download = 'monty-gradient-HD.png'; 
-                a.href = canvas.toDataURL("image/png", 1.0); 
-                a.click();
+            try {
+                const canvas = document.createElement('canvas');
+                // HD Scale (2x) for high quality
+                const scale = 2; 
+                const w = window.innerWidth * scale;
+                const h = window.innerHeight * scale;
+                canvas.width = w;
+                canvas.height = h;
+                const ctx = canvas.getContext('2d');
+
+                const angle = parseInt(document.getElementById('tool-angle').value);
+                const blur = parseInt(document.getElementById('tool-blur').value);
                 
-                // Show UI back
-                sheet.style.display = '';
-                topBar.style.display = 'flex';
-                // Resume animation if it was on
-                if(wasAnimOn) bgInner.classList.add('anim-active');
-            });
-        }, 150); // Small delay to let UI completely vanish
+                // Apply Real Canvas Blur (HD scaled)
+                if(blur > 0) ctx.filter = `blur(${blur * scale}px)`;
+
+                // Math to exactly match CSS Linear-Gradient Angle
+                ctx.translate(w/2, h/2);
+                ctx.rotate(angle * Math.PI / 180);
+                
+                // Draw gradient from bottom to top to match CSS behavior
+                const size = Math.sqrt(w*w + h*h);
+                const grd = ctx.createLinearGradient(0, size/2, 0, -size/2);
+
+                const sorted = [...layers].sort((a,b) => a.p - b.p);
+                sorted.forEach(l => {
+                    grd.addColorStop(l.p / 100, hexToRgba(l.h, l.o));
+                });
+
+                ctx.fillStyle = grd;
+                // Draw a massive rect so edges don't show when blurred
+                ctx.fillRect(-size, -size, size*2, size*2);
+
+                // Reset logic for Noise overlay
+                ctx.resetTransform();
+                ctx.filter = 'none';
+
+                // Add Noise Pattern just like CSS
+                const img = new Image();
+                img.crossOrigin = "Anonymous";
+                img.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAX0lEQVQYV2N89+7dfwYc4P379/8ZEONgBpoIcgGIfPjwof8sXwYGIAGQBpA8SDwIQQHkg8SAEshmITuB7AAJIHsB2QuSBiEogOyHJBikG0UhyAVQhSGxIA2IjiIXgBwAABk3Q27+c7IAAAAASUVORK5CYII=";
+                
+                img.onload = () => {
+                    ctx.globalAlpha = 0.15;
+                    ctx.globalCompositeOperation = 'overlay';
+                    const pattern = ctx.createPattern(img, 'repeat');
+                    ctx.fillStyle = pattern;
+                    ctx.fillRect(0, 0, w, h);
+
+                    // Force Download
+                    const a = document.createElement('a');
+                    a.download = 'monty-pro-gradient.png';
+                    a.href = canvas.toDataURL('image/png', 1.0);
+                    a.click();
+                    
+                    btn.innerHTML = `<i class="fa-solid fa-check"></i> SAVED!`;
+                    setTimeout(() => btn.innerHTML = originalHTML, 1500);
+                };
+            } catch (err) {
+                alert("Download Error: Kripya try again karein.");
+                btn.innerHTML = originalHTML;
+            }
+        }, 100);
     }
     render();
 </script>
