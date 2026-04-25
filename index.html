@@ -3,130 +3,92 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Pro Gradient Builder v13 (TV Mouse Fixed)</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>Pro Gradient Builder v21 (Checkers & Scanlines)</title>
     <style>
-        :root { --neon: #00f2fe; --glass: rgba(10, 10, 10, 0.75); --border: rgba(255, 255, 255, 0.1); }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
-        body { margin: 0; padding: 0; min-height: 100vh; font-family: 'Inter', sans-serif; overflow: hidden; background: #000; }
+        :root { --neon: #00f2fe; --glass: rgba(10, 10, 10, 0.85); --border: rgba(255, 255, 255, 0.15); }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; margin: 0; padding: 0; }
+        body { min-height: 100vh; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; background: #000; }
 
-        #bg-canvas { 
-            position: fixed; 
-            top: 0; left: 0; right: 0; bottom: 0; 
-            width: 100vw; height: 100vh; 
-            z-index: 1; cursor: pointer; 
-        }
+        /* CANVASES */
+        #bg-canvas { position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; z-index: 1; cursor: pointer; }
+        #inner-bg { width: 100%; height: 100%; position: absolute; top: 0; left: 0; transition: filter 0.1s; }
         
-        #inner-bg { 
-            width: 100%; height: 100%; 
-            position: absolute; top: 0; left: 0;
-            background-size: 100% 100%;
-        }
-        
-        #inner-bg::before { 
-            content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            opacity: 0.1; pointer-events: none; 
-            background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAX0lEQVQYV2N89+7dfwYc4P379/8ZEONgBpoIcgGIfPjwof8sXwYGIAGQBpA8SDwIQQHkg8SAEshmITuB7AAJIHsB2QuSBiEogOyHJBikG0UhyAVQhSGxIA2IjiIXgBwAABk3Q27+c7IAAAAASUVORK5CYII="); 
-            background-repeat: repeat;
-        }
+        /* OVERLAYS FOR PATTERNS */
+        #grid-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2; }
+        #dot-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; }
+        #stripes-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 4; }
+        #chess-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
+        #scan-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 6; }
 
-        @keyframes flowAnim { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-        .anim-active { background-size: 300% 300% !important; animation: flowAnim var(--speed, 15s) ease-in-out infinite !important; }
-
+        /* ULTRA COMPACT TOOLBOX */
         .toolbox { 
-            position: fixed; 
-            top: 20px; 
-            right: 20px; 
-            width: 340px; /* Thoda aur jagah di sliders ke liye */
-            background: var(--glass); 
-            backdrop-filter: blur(25px); 
-            border: 1px solid var(--border); 
-            padding: 15px; 
-            border-radius: 16px;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.6);
-            display: flex; 
-            flex-direction: column;
-            z-index: 1000;
-            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
-            max-height: calc(100vh - 40px);
-            overflow-y: auto;
+            position: fixed; top: 10px; right: 10px; 
+            width: 200px; background: var(--glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border); padding: 6px; 
+            border-radius: 10px; box-shadow: 0 8px 20px rgba(0,0,0,0.8);
+            display: flex; flex-direction: column; z-index: 1000;
+            transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+            max-height: calc(100vh - 20px); overflow-y: auto;
         }
 
-        .toolbox.ui-hidden { opacity: 0; pointer-events: none; transform: scale(0.9) translate(20px, -20px); }
+        .toolbox::-webkit-scrollbar { width: 3px; }
+        .toolbox::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 3px; }
+        .toolbox.ui-hidden { opacity: 0; pointer-events: none; transform: scale(0.95) translate(10px, -10px); }
 
         @media (max-width: 768px) {
-            .toolbox {
-                top: auto; bottom: 0; right: 0; left: 0;
-                width: 100%;
-                border-radius: 20px 20px 0 0;
-                padding: 15px;
-                max-height: 50vh;
-            }
+            .toolbox { top: auto; bottom: 0; right: 0; left: 0; width: 100%; border-radius: 12px 12px 0 0; padding: 8px; max-height: 55vh; }
             .toolbox.ui-hidden { transform: translateY(100%); }
         }
 
-        .action-row { display: flex; gap: 8px; margin-bottom: 12px; }
-        .btn-tiny { flex: 1; justify-content: center; background: rgba(255,255,255,0.1); color: white; border: 1px solid var(--border); padding: 10px; border-radius: 8px; font-size: 0.7rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: 0.2s;}
+        .action-row { display: flex; gap: 4px; margin-bottom: 6px; }
+        .btn-tiny { flex: 1; justify-content: center; background: rgba(255,255,255,0.1); color: white; border: 1px solid var(--border); padding: 5px; border-radius: 4px; font-size: 0.55rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 3px; transition: 0.2s;}
         .btn-tiny:hover { background: rgba(255,255,255,0.2); }
 
-        .nav { display: flex; gap: 6px; margin-bottom: 12px; }
-        .tab { flex: 1; background: rgba(255,255,255,0.05); color: #888; border: none; padding: 8px 10px; border-radius: 8px; font-size: 0.7rem; font-weight: 700; cursor: pointer; }
+        .nav { display: flex; gap: 4px; margin-bottom: 6px; }
+        .tab { flex: 1; background: rgba(255,255,255,0.05); color: #888; border: none; padding: 5px; border-radius: 4px; font-size: 0.55rem; font-weight: 700; cursor: pointer; transition: 0.2s; }
         .tab.active { background: #fff; color: #000; }
 
-        .card { background: rgba(255,255,255,0.03); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.05); }
-        
-        /* FIX: TV MOUSE KE LIYE SLIDER KO BADA (THICK) KIYA GAYA HAI */
-        input[type="range"] { 
-            -webkit-appearance: none; 
-            width: 100%; 
-            height: 8px; /* Pehle 3px tha, ab click karna aasaan hai */
-            background: rgba(255,255,255,0.15); 
-            border-radius: 10px; 
-            margin: 8px 0; 
-            cursor: pointer; 
-        }
-        
-        /* FIX: TV D-Pad Focus Outline */
-        input[type="range"]:focus {
-            outline: 2px solid rgba(0, 242, 254, 0.6);
-            background: rgba(255,255,255,0.25);
-        }
+        .g-type-row { display: flex; gap: 3px; margin-bottom: 6px; }
+        .g-btn { flex: 1; background: rgba(255,255,255,0.05); color: #888; border: 1px solid transparent; padding: 4px; border-radius: 4px; font-size: 0.5rem; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .g-btn.active { background: rgba(0, 242, 254, 0.15); color: var(--neon); border-color: var(--neon); }
 
-        /* FIX: Thumb (Gola) ko bada kiya taaki pakadne mein asani ho */
-        input[type="range"]::-webkit-slider-thumb { 
-            -webkit-appearance: none; 
-            width: 20px; /* Pehle 14px tha */
-            height: 20px; 
-            background: #fff; 
-            border-radius: 50%; 
-            box-shadow: 0 0 8px var(--neon); 
-            cursor: pointer; 
-        }
+        .card { background: rgba(255,255,255,0.04); border-radius: 6px; padding: 5px 6px; margin-bottom: 4px; border: 1px solid rgba(255,255,255,0.05); }
+        .card-title { color: #fff; font-size: 0.55rem; font-weight: bold; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px;}
+        
+        /* MINI SLIDERS - Zero Lag */
+        input[type="range"] { -webkit-appearance: none; width: 100%; height: 3px; background: rgba(255,255,255,0.15); border-radius: 10px; margin: 3px 0; cursor: pointer; }
+        input[type="range"]:focus { outline: none; background: rgba(255,255,255,0.3); }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 10px; height: 10px; background: #fff; border-radius: 50%; box-shadow: 0 0 4px var(--neon); cursor: pointer; }
 
-        .color-circle { width: 28px; height: 28px; border-radius: 50%; border: 2px solid #fff; position: relative; overflow: hidden; flex-shrink: 0; cursor: pointer;}
-        input[type="color"] { position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; cursor: pointer; }
+        .color-circle { width: 16px; height: 16px; border-radius: 50%; border: 1px solid #fff; position: relative; overflow: hidden; flex-shrink: 0; cursor: pointer;}
+        input[type="color"] { position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; cursor: pointer; border: none; padding: 0; margin: 0; }
         
-        .btn-act { background: rgba(255,255,255,0.06); color: white; border: 1px solid rgba(255,255,255,0.08); padding: 10px; border-radius: 8px; font-size: 0.7rem; font-weight: 700; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 4px; cursor: pointer;}
-        .btn-act:hover { background: rgba(255,255,255,0.1); }
+        .btn-act { background: rgba(255,255,255,0.08); color: white; border: 1px solid rgba(255,255,255,0.1); padding: 5px; border-radius: 4px; font-size: 0.55rem; font-weight: 700; width: 100%; display: block; text-align: center; margin-bottom: 2px; cursor: pointer; transition: 0.2s;}
+        .btn-act:hover { background: rgba(255,255,255,0.2); }
         
-        #css-box { font-size: 0.6rem; color: var(--neon); background: rgba(0,0,0,0.5); padding: 12px; border-radius: 8px; word-break: break-all; font-family: monospace; border: 1px solid var(--border); white-space: pre-wrap; margin-top: 8px;}
-        .val-badge { background: rgba(255,255,255,0.1); padding: 3px 6px; border-radius: 4px; font-family: monospace; font-size: 0.6rem; color: #eee;}
+        #css-box { font-size: 0.45rem; color: var(--neon); background: rgba(0,0,0,0.6); padding: 6px; border-radius: 4px; word-break: break-all; font-family: monospace; border: 1px solid var(--border); white-space: pre-wrap; margin-top: 4px; max-height: 60px; overflow-y: auto;}
+        
+        .val-badge { background: rgba(255,255,255,0.1); padding: 1px 3px; border-radius: 3px; font-family: monospace; font-size: 0.45rem; color: #ddd; min-width: 24px; text-align: center;}
+        .lbl-sm { color:#888; font-size:0.5rem; font-weight:bold; width: 26px; display: inline-block; }
+        .row-sm { display: flex; align-items: center; gap: 4px; margin-bottom: 3px; }
+        
+        .btn-del { color: #ff4757; font-size: 0.6rem; font-weight: bold; cursor: pointer; padding: 2px 4px; background: rgba(255,71,87,0.1); border-radius: 3px; border: none; }
     </style>
 </head>
 <body>
 
 <div id="bg-canvas" onclick="toggleUI()">
     <div id="inner-bg"></div>
+    <div id="grid-overlay"></div>
+    <div id="dot-overlay"></div>
+    <div id="stripes-overlay"></div>
+    <div id="chess-overlay"></div>
+    <div id="scan-overlay"></div>
 </div>
 
 <div class="toolbox" id="toolbox">
     <div class="action-row">
-        <button id="css-btn" class="btn-tiny" onclick="copyCSS(event)" style="background: #fff; color: #000;">
-            <i class="fa-solid fa-code"></i> COPY CSS
-        </button>
-        <button id="save-btn" class="btn-tiny" onclick="downloadNativeImg(event)" style="background: #22c55e; color: #fff; border:none;">
-            <i class="fa-solid fa-download"></i> HD SAVE
-        </button>
+        <button id="css-btn" class="btn-tiny" onclick="copyCSS(event)" style="background: #fff; color: #000;">COPY CSS</button>
     </div>
 
     <div class="nav">
@@ -135,30 +97,114 @@
     </div>
 
     <div id="col" class="section">
-        <div class="card" style="display:flex; gap: 15px;">
-            <div style="flex:1; display:flex; align-items:center; gap:8px;">
-                <label style="color:#888; font-size:0.6rem; font-weight:bold;">ANG</label>
+        <div class="g-type-row" id="type-btns">
+            <button class="g-btn active" onclick="setType('linear')">LIN</button>
+            <button class="g-btn" onclick="setType('radial')">RAD</button>
+            <button class="g-btn" onclick="setType('conic')">CON</button>
+        </div>
+
+        <div class="card" style="display:flex; gap: 6px;">
+            <div style="flex:1; display:flex; align-items:center; gap:2px;">
+                <span class="lbl-sm">ANG</span>
                 <input type="range" id="tool-angle" min="0" max="360" value="135" oninput="gen()">
-                <span class="val-badge" id="angle-disp">135°</span>
             </div>
-            <div style="flex:1; display:flex; align-items:center; gap:8px;">
-                <label style="color:#888; font-size:0.6rem; font-weight:bold;">BLR</label>
+            <div style="flex:1; display:flex; align-items:center; gap:2px;">
+                <span class="lbl-sm" style="width:20px;">BLR</span>
                 <input type="range" id="tool-blur" min="0" max="40" value="0" oninput="gen()">
             </div>
         </div>
         
         <div id="layer-list"></div>
-        <button class="btn-act" onclick="addLayer()"><i class="fa-solid fa-plus"></i> ADD COLOR</button>
+        <button class="btn-act" onclick="addLayer()">ADD COLOR</button>
     </div>
 
     <div id="fx" class="section" style="display:none;">
+        
         <div class="card">
-            <div style="display:flex; align-items:center; gap:12px;">
-                <label style="color:#888; font-size:0.6rem; font-weight:bold;">SPEED</label>
-                <input type="range" id="speed" min="2" max="30" value="10" onchange="gen()">
-                <button id="anim-toggle" class="btn-tiny" onclick="toggleAnimation()" style="background: #00f2fe; color:#000; padding:8px 15px; margin:0; flex:none;">PLAY</button>
+            <div class="card-title">STRIPES</div>
+            <div class="row-sm">
+                <span class="lbl-sm">OPC</span>
+                <input type="range" id="strp-op" min="0" max="100" value="0" oninput="gen()">
+                <span class="val-badge" id="strp-op-disp">0%</span>
+            </div>
+            <div class="row-sm">
+                <span class="lbl-sm">THK</span>
+                <input type="range" id="strp-th" min="1" max="20" value="5" oninput="gen()">
+                <span class="val-badge" id="strp-th-disp">5px</span>
+            </div>
+            <div class="row-sm" style="margin-bottom:0;">
+                <span class="lbl-sm">GAP</span>
+                <input type="range" id="strp-gap" min="10" max="100" value="20" oninput="gen()">
+                <span class="val-badge" id="strp-gap-disp">20px</span>
             </div>
         </div>
+
+        <div class="card">
+            <div class="card-title">GRID LINES</div>
+            <div class="row-sm">
+                <span class="lbl-sm">OPC</span>
+                <input type="range" id="grid-op" min="0" max="100" value="0" oninput="gen()">
+                <span class="val-badge" id="grid-op-disp">0%</span>
+            </div>
+            <div class="row-sm">
+                <span class="lbl-sm">THK</span>
+                <input type="range" id="grid-th" min="1" max="10" value="1" oninput="gen()">
+                <span class="val-badge" id="grid-th-disp">1px</span>
+            </div>
+            <div class="row-sm" style="margin-bottom:0;">
+                <span class="lbl-sm">GAP</span>
+                <input type="range" id="grid-gap" min="10" max="150" value="40" oninput="gen()">
+                <span class="val-badge" id="grid-gap-disp">40px</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">CHECKERBOARD</div>
+            <div class="row-sm">
+                <span class="lbl-sm">OPC</span>
+                <input type="range" id="chess-op" min="0" max="100" value="0" oninput="gen()">
+                <span class="val-badge" id="chess-op-disp">0%</span>
+            </div>
+            <div class="row-sm" style="margin-bottom:0;">
+                <span class="lbl-sm">SIZ</span>
+                <input type="range" id="chess-sz" min="10" max="150" value="40" oninput="gen()">
+                <span class="val-badge" id="chess-sz-disp">40px</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">SCANLINES</div>
+            <div class="row-sm">
+                <span class="lbl-sm">OPC</span>
+                <input type="range" id="scan-op" min="0" max="100" value="0" oninput="gen()">
+                <span class="val-badge" id="scan-op-disp">0%</span>
+            </div>
+            <div class="row-sm" style="margin-bottom:0;">
+                <span class="lbl-sm">THK</span>
+                <input type="range" id="scan-th" min="2" max="20" value="4" oninput="gen()">
+                <span class="val-badge" id="scan-th-disp">4px</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">DOT PATTERN</div>
+            <div class="row-sm">
+                <span class="lbl-sm">OPC</span>
+                <input type="range" id="dot-op" min="0" max="100" value="0" oninput="gen()">
+                <span class="val-badge" id="dot-op-disp">0%</span>
+            </div>
+            <div class="row-sm">
+                <span class="lbl-sm">SIZ</span>
+                <input type="range" id="dot-sz" min="1" max="10" value="2" oninput="gen()">
+                <span class="val-badge" id="dot-sz-disp">2px</span>
+            </div>
+            <div class="row-sm" style="margin-bottom:0;">
+                <span class="lbl-sm">GAP</span>
+                <input type="range" id="dot-gap" min="5" max="150" value="20" oninput="gen()">
+                <span class="val-badge" id="dot-gap-disp">20px</span>
+            </div>
+        </div>
+
         <div id="css-box">...</div>
     </div>
 </div>
@@ -169,11 +215,9 @@
         {h: "#7400b8", p: 50, o: 100},  
         {h: "#00f2fe", p: 100, o: 100}  
     ];
-    let isAnimOn = false;
+    let currentType = 'linear';
 
-    function toggleUI() { 
-        document.getElementById('toolbox').classList.toggle('ui-hidden'); 
-    }
+    function toggleUI() { document.getElementById('toolbox').classList.toggle('ui-hidden'); }
     
     function tab(e, name) {
         document.querySelectorAll('.section').forEach(x => x.style.display = 'none');
@@ -182,20 +226,12 @@
         if(e) e.currentTarget.classList.add('active');
     }
 
-    function toggleAnimation() {
-        isAnimOn = !isAnimOn;
-        document.getElementById('inner-bg').classList.toggle('anim-active', isAnimOn);
-        const animBtn = document.getElementById('anim-toggle');
-        
-        if(isAnimOn) {
-            animBtn.innerText = "PAUSE";
-            animBtn.style.background = "#ff4757"; 
-            animBtn.style.color = "#fff";
-        } else {
-            animBtn.innerText = "PLAY";
-            animBtn.style.background = "#00f2fe"; 
-            animBtn.style.color = "#000";
-        }
+    function setType(type) {
+        currentType = type;
+        document.querySelectorAll('.g-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelector(`.g-btn[onclick="setType('${type}')"]`).classList.add('active');
+        document.getElementById('tool-angle').disabled = (type === 'radial');
+        document.getElementById('tool-angle').style.opacity = (type === 'radial') ? 0.3 : 1;
         gen();
     }
 
@@ -210,25 +246,21 @@
         layers.forEach((l, i) => {
             const div = document.createElement('div');
             div.className = 'card';
-            div.style.display = 'flex';
-            div.style.alignItems = 'center';
-            div.style.gap = '12px';
+            div.style.display = 'flex'; div.style.alignItems = 'center'; div.style.gap = '6px';
             
             div.innerHTML = `
                 <div class="color-circle" style="background:${l.h}"><input type="color" value="${l.h}" oninput="upd(${i},'h',this.value)"></div>
-                <div style="flex:1; display:flex; flex-direction:column; gap:6px;">
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <span style="color:#666; font-size:0.6rem; font-weight:bold; width:15px;">POS</span>
+                <div style="flex:1; display:flex; flex-direction:column; gap:2px;">
+                    <div class="row-sm" style="margin:0;">
+                        <span class="lbl-sm" style="width:20px;">POS</span>
                         <input type="range" min="0" max="100" value="${l.p}" oninput="upd(${i},'p',this.value)">
-                        <span id="pos-badge-${i}" style="color:#eee; font-size:0.6rem; width:28px; text-align:right;">${l.p}%</span>
                     </div>
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <span style="color:#666; font-size:0.6rem; font-weight:bold; width:15px;">OPC</span>
+                    <div class="row-sm" style="margin:0;">
+                        <span class="lbl-sm" style="width:20px;">OPC</span>
                         <input type="range" min="0" max="100" value="${l.o}" oninput="upd(${i},'o',this.value)">
-                        <span id="op-badge-${i}" style="color:#eee; font-size:0.6rem; width:28px; text-align:right;">${l.o}%</span>
                     </div>
                 </div>
-                <i class="fa-solid fa-times" onclick="rem(${i})" style="color:#ff4757; font-size:0.9rem; cursor:pointer; padding: 5px;"></i>
+                <button class="btn-del" onclick="rem(${i})">X</button>
             `;
             list.appendChild(div);
         });
@@ -237,14 +269,7 @@
 
     function upd(i, k, v) { 
         layers[i][k] = (k === 'p' || k === 'o') ? parseFloat(v) : v; 
-        
-        if(k === 'h') {
-            document.querySelectorAll('.color-circle')[i].style.background = v;
-        } else if (k === 'p') {
-            document.getElementById(`pos-badge-${i}`).innerText = v + '%';
-        } else if (k === 'o') {
-            document.getElementById(`op-badge-${i}`).innerText = v + '%';
-        }
+        if(k === 'h') document.querySelectorAll('.color-circle')[i].style.background = v;
         gen(); 
     }
 
@@ -252,115 +277,115 @@
     function rem(i) { if(layers.length > 2) { layers.splice(i, 1); render(); } }
 
     function gen() {
-        const speed = document.getElementById('speed').value;
+        // Core Vals
         const bl = document.getElementById('tool-blur').value;
         const angle = document.getElementById('tool-angle').value;
-        document.getElementById('angle-disp').innerText = angle + '°';
         
+        // Pattern Vals
+        const gridOp = document.getElementById('grid-op').value;
+        const gridTh = document.getElementById('grid-th').value;
+        const gridGap = document.getElementById('grid-gap').value;
+        
+        const dotOp = document.getElementById('dot-op').value;
+        const dotSz = document.getElementById('dot-sz').value;
+        const dotGap = document.getElementById('dot-gap').value;
+
+        const strpOp = document.getElementById('strp-op').value;
+        const strpTh = document.getElementById('strp-th').value;
+        const strpGap = document.getElementById('strp-gap').value;
+
+        const chessOp = document.getElementById('chess-op').value;
+        const chessSz = document.getElementById('chess-sz').value;
+
+        const scanOp = document.getElementById('scan-op').value;
+        const scanTh = document.getElementById('scan-th').value;
+        
+        // Update Labels
+        document.getElementById('strp-op-disp').textContent = strpOp + '%';
+        document.getElementById('strp-th-disp').textContent = strpTh + 'px';
+        document.getElementById('strp-gap-disp').textContent = strpGap + 'px';
+
+        document.getElementById('grid-op-disp').textContent = gridOp + '%';
+        document.getElementById('grid-th-disp').textContent = gridTh + 'px';
+        document.getElementById('grid-gap-disp').textContent = gridGap + 'px';
+        
+        document.getElementById('dot-op-disp').textContent = dotOp + '%';
+        document.getElementById('dot-sz-disp').textContent = dotSz + 'px';
+        document.getElementById('dot-gap-disp').textContent = dotGap + 'px';
+
+        document.getElementById('chess-op-disp').textContent = chessOp + '%';
+        document.getElementById('chess-sz-disp').textContent = chessSz + 'px';
+
+        document.getElementById('scan-op-disp').textContent = scanOp + '%';
+        document.getElementById('scan-th-disp').textContent = scanTh + 'px';
+        
+        // Gradient Construction
         const sorted = [...layers].sort((a,b) => a.p - b.p);
         const cStr = sorted.map(l => `${hexToRgba(l.h, l.o)} ${l.p}%`).join(', ');
-        const grad = `linear-gradient(${angle}deg, ${cStr})`;
         
+        let gradStr = '';
+        if(currentType === 'linear') gradStr = `linear-gradient(${angle}deg, ${cStr})`;
+        else if(currentType === 'radial') gradStr = `radial-gradient(circle, ${cStr})`;
+        else if(currentType === 'conic') gradStr = `conic-gradient(from ${angle}deg, ${cStr})`;
+        
+        // Apply Background
         const bg = document.getElementById('inner-bg');
-        bg.style.backgroundImage = grad;
-        bg.style.setProperty('--speed', speed + 's');
-        bg.style.filter = `blur(${bl}px)`;
+        bg.style.backgroundImage = gradStr;
+        if(bl > 0) bg.style.filter = `blur(${bl}px)`; else bg.style.filter = 'none';
         
-        let css = `background: ${grad};\n`;
+        // Apply Stripes
+        const stripesOverlay = document.getElementById('stripes-overlay');
+        if(strpOp > 0) {
+            const gap = parseInt(strpGap); const thk = parseInt(strpTh);
+            stripesOverlay.style.backgroundImage = `repeating-linear-gradient(45deg, transparent, transparent ${gap}px, rgba(255,255,255, ${strpOp/100}) ${gap}px, rgba(255,255,255, ${strpOp/100}) ${gap + thk}px)`;
+        } else stripesOverlay.style.backgroundImage = 'none';
+
+        // Apply Grid
+        const gridOverlay = document.getElementById('grid-overlay');
+        if(gridOp > 0) {
+            gridOverlay.style.backgroundImage = `
+                linear-gradient(to right, rgba(255,255,255, ${gridOp/100}) ${gridTh}px, transparent ${gridTh}px),
+                linear-gradient(to bottom, rgba(255,255,255, ${gridOp/100}) ${gridTh}px, transparent ${gridTh}px)`;
+            gridOverlay.style.backgroundSize = `${gridGap}px ${gridGap}px`;
+        } else gridOverlay.style.backgroundImage = 'none';
+
+        // Apply Dots
+        const dotOverlay = document.getElementById('dot-overlay');
+        if(dotOp > 0) {
+            dotOverlay.style.backgroundImage = `radial-gradient(rgba(255,255,255, ${dotOp/100}) ${dotSz}px, transparent ${dotSz}px)`;
+            dotOverlay.style.backgroundSize = `${dotGap}px ${dotGap}px`;
+        } else dotOverlay.style.backgroundImage = 'none';
+
+        // Apply Chess
+        const chessOverlay = document.getElementById('chess-overlay');
+        if(chessOp > 0) {
+            chessOverlay.style.backgroundImage = `repeating-conic-gradient(rgba(255,255,255, ${chessOp/100}) 0% 25%, transparent 0% 50%)`;
+            chessOverlay.style.backgroundSize = `${chessSz}px ${chessSz}px`;
+        } else chessOverlay.style.backgroundImage = 'none';
+
+        // Apply Scanlines
+        const scanOverlay = document.getElementById('scan-overlay');
+        if(scanOp > 0) {
+            scanOverlay.style.backgroundImage = `linear-gradient(to bottom, rgba(0,0,0,${scanOp/100}) 50%, transparent 50%)`;
+            scanOverlay.style.backgroundSize = `100% ${scanTh}px`;
+        } else scanOverlay.style.backgroundImage = 'none';
+        
+        // CSS Box Logic
+        let css = `background: ${gradStr};\n`;
         if (bl > 0) css += `filter: blur(${bl}px);\n`;
-        if (isAnimOn) {
-            css += `background-size: 300% 300%;\nanimation: flowAnim ${speed}s ease infinite;\n\n`;
-            css += `@keyframes flowAnim {\n  0% { background-position: 0% 50%; }\n  50% { background-position: 100% 50%; }\n  100% { background-position: 0% 50%; }\n}`;
-        }
-        document.getElementById('css-box').innerText = css;
+        document.getElementById('css-box').textContent = css;
     }
 
     function copyCSS(e) {
         e.stopPropagation();
         const textArea = document.createElement("textarea");
-        textArea.value = document.getElementById('css-box').innerText;
+        textArea.value = document.getElementById('css-box').textContent;
         document.body.appendChild(textArea); textArea.select();
         document.execCommand('copy'); document.body.removeChild(textArea);
         
-        const b = document.getElementById('css-btn'); 
-        const oldHTML = b.innerHTML;
-        b.innerHTML = `<i class="fa-solid fa-check"></i> COPIED`;
-        b.style.background = "#22c55e"; b.style.color = "#fff";
-        
-        setTimeout(() => { 
-            b.innerHTML = oldHTML; 
-            b.style.background = "#fff"; 
-            b.style.color = "#000"; 
-        }, 1500);
-    }
-
-    function downloadNativeImg(e) {
-        e.stopPropagation();
-        const btn = document.getElementById('save-btn');
-        const toolbox = document.getElementById('toolbox');
-        const originalHTML = btn.innerHTML;
-        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> SAVING...`;
-
-        setTimeout(() => {
-            try {
-                toolbox.style.display = 'none';
-
-                const canvas = document.createElement('canvas');
-                const scale = 2; 
-                const w = window.innerWidth * scale;
-                const h = window.innerHeight * scale;
-                canvas.width = w;
-                canvas.height = h;
-                const ctx = canvas.getContext('2d');
-
-                const angle = parseInt(document.getElementById('tool-angle').value);
-                const blur = parseInt(document.getElementById('tool-blur').value);
-                
-                if(blur > 0) ctx.filter = `blur(${blur * scale}px)`;
-
-                ctx.translate(w/2, h/2);
-                ctx.rotate(angle * Math.PI / 180);
-                
-                const size = Math.sqrt(w*w + h*h);
-                const grd = ctx.createLinearGradient(0, size/2, 0, -size/2);
-
-                const sorted = [...layers].sort((a,b) => a.p - b.p);
-                sorted.forEach(l => {
-                    grd.addColorStop(l.p / 100, hexToRgba(l.h, l.o));
-                });
-
-                ctx.fillStyle = grd;
-                ctx.fillRect(-size, -size, size*2, size*2);
-
-                ctx.resetTransform();
-                ctx.filter = 'none';
-
-                const img = new Image();
-                img.crossOrigin = "Anonymous";
-                img.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAX0lEQVQYV2N89+7dfwYc4P379/8ZEONgBpoIcgGIfPjwof8sXwYGIAGQBpA8SDwIQQHkg8SAEshmITuB7AAJIHsB2QuSBiEogOyHJBikG0UhyAVQhSGxIA2IjiIXgBwAABk3Q27+c7IAAAAASUVORK5CYII=";
-                
-                img.onload = () => {
-                    ctx.globalAlpha = 0.15;
-                    ctx.globalCompositeOperation = 'overlay';
-                    const pattern = ctx.createPattern(img, 'repeat');
-                    ctx.fillStyle = pattern;
-                    ctx.fillRect(0, 0, w, h);
-
-                    const a = document.createElement('a');
-                    a.download = 'monty-pro-gradient.png';
-                    a.href = canvas.toDataURL('image/png', 1.0);
-                    a.click();
-                    
-                    toolbox.style.display = 'flex';
-                    btn.innerHTML = `<i class="fa-solid fa-check"></i> SAVED!`;
-                    setTimeout(() => btn.innerHTML = originalHTML, 1500);
-                };
-            } catch (err) {
-                alert("Download Error: Kripya try again karein.");
-                toolbox.style.display = 'flex';
-                btn.innerHTML = originalHTML;
-            }
-        }, 100);
+        const b = document.getElementById('css-btn'); const oldHTML = b.innerHTML;
+        b.innerHTML = `COPIED`; b.style.background = "#22c55e"; b.style.color = "#fff";
+        setTimeout(() => { b.innerHTML = oldHTML; b.style.background = "#fff"; b.style.color = "#000"; }, 1500);
     }
     
     render();
