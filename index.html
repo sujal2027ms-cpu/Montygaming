@@ -3,90 +3,112 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Pro Gradient Builder v21 (Checkers & Scanlines)</title>
+    <title>Pro Gradient Builder v26 (Zero Lag / GPU Accelerated)</title>
     <style>
-        :root { --neon: #00f2fe; --glass: rgba(10, 10, 10, 0.85); --border: rgba(255, 255, 255, 0.15); }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; margin: 0; padding: 0; }
-        body { min-height: 100vh; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; background: #000; }
-
-        /* CANVASES */
-        #bg-canvas { position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; z-index: 1; cursor: pointer; }
-        #inner-bg { width: 100%; height: 100%; position: absolute; top: 0; left: 0; transition: filter 0.1s; }
+        /* CSS Variables for ZERO LAG rendering */
+        :root { 
+            --neon: #00f2fe; --glass: rgba(10, 10, 10, 0.85); --border: rgba(255, 255, 255, 0.15); 
+            --blur: 0px; --noise-op: 0.3;
+            --strp-op: 0; --strp-th: 5px; --strp-gap: 20px;
+            --grid-op: 0; --grid-th: 1px; --grid-gap: 40px;
+            --chess-op: 0; --chess-sz: 40px;
+            --scan-op: 0; --scan-th: 4px;
+            --dot-op: 0; --dot-sz: 2px; --dot-gap: 20px;
+        }
         
-        /* OVERLAYS FOR PATTERNS */
-        #grid-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2; }
-        #dot-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; }
-        #stripes-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 4; }
-        #chess-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
-        #scan-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 6; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; margin: 0; padding: 0; }
+        body { min-height: 100vh; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; background: #000; touch-action: none; user-select: none; }
+
+        /* CANVASES (Hardware Accelerated) */
+        #bg-canvas { position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; z-index: 1; }
+        
+        .layer { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; 
+            transform: translateZ(0); /* Forces GPU Acceleration */
+            will-change: background-image, opacity;
+        }
+
+        #inner-bg { z-index: 1; filter: blur(var(--blur)); will-change: background-image, filter; }
+        
+        /* PURE CSS PATTERNS (Browser Native = Fastest) */
+        #stripes-overlay { z-index: 2; background-image: repeating-linear-gradient(45deg, transparent, transparent var(--strp-gap), rgba(255,255,255,var(--strp-op)) var(--strp-gap), rgba(255,255,255,var(--strp-op)) calc(var(--strp-gap) + var(--strp-th))); }
+        #grid-overlay { z-index: 3; background-image: linear-gradient(to right, rgba(255,255,255, var(--grid-op)) var(--grid-th), transparent var(--grid-th)), linear-gradient(to bottom, rgba(255,255,255, var(--grid-op)) var(--grid-th), transparent var(--grid-th)); background-size: var(--grid-gap) var(--grid-gap); }
+        #dot-overlay { z-index: 4; background-image: radial-gradient(rgba(255,255,255, var(--dot-op)) var(--dot-sz), transparent var(--dot-sz)); background-size: var(--dot-gap) var(--dot-gap); }
+        #chess-overlay { z-index: 5; background-image: repeating-conic-gradient(rgba(255,255,255, var(--chess-op)) 0% 25%, transparent 0% 50%); background-size: var(--chess-sz) var(--chess-sz); }
+        #scan-overlay { z-index: 6; background-image: linear-gradient(to bottom, rgba(0,0,0,var(--scan-op)) 50%, transparent 50%); background-size: 100% var(--scan-th); }
+        
+        /* HD NOISE LAYER */
+        #noise-overlay { z-index: 10; opacity: var(--noise-op); mix-blend-mode: overlay; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
 
         /* ULTRA COMPACT TOOLBOX */
         .toolbox { 
             position: fixed; top: 10px; right: 10px; 
             width: 200px; background: var(--glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--border); padding: 6px; 
-            border-radius: 10px; box-shadow: 0 8px 20px rgba(0,0,0,0.8);
+            border: 1px solid var(--border); padding: 8px; 
+            border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.9);
             display: flex; flex-direction: column; z-index: 1000;
-            transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+            transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.3s;
             max-height: calc(100vh - 20px); overflow-y: auto;
+            touch-action: pan-y; /* Allows scrolling inside toolbox only */
         }
 
-        .toolbox::-webkit-scrollbar { width: 3px; }
-        .toolbox::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 3px; }
+        .toolbox::-webkit-scrollbar { width: 4px; }
+        .toolbox::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 4px; }
         .toolbox.ui-hidden { opacity: 0; pointer-events: none; transform: scale(0.95) translate(10px, -10px); }
 
         @media (max-width: 768px) {
-            .toolbox { top: auto; bottom: 0; right: 0; left: 0; width: 100%; border-radius: 12px 12px 0 0; padding: 8px; max-height: 55vh; }
+            .toolbox { top: auto; bottom: 0; right: 0; left: 0; width: 100%; border-radius: 12px 12px 0 0; padding: 10px; max-height: 55vh; }
             .toolbox.ui-hidden { transform: translateY(100%); }
         }
 
         .action-row { display: flex; gap: 4px; margin-bottom: 6px; }
-        .btn-tiny { flex: 1; justify-content: center; background: rgba(255,255,255,0.1); color: white; border: 1px solid var(--border); padding: 5px; border-radius: 4px; font-size: 0.55rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 3px; transition: 0.2s;}
+        .btn-tiny { flex: 1; justify-content: center; background: rgba(255,255,255,0.1); color: white; border: 1px solid var(--border); padding: 6px; border-radius: 4px; font-size: 0.55rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 3px; transition: 0.2s;}
         .btn-tiny:hover { background: rgba(255,255,255,0.2); }
 
         .nav { display: flex; gap: 4px; margin-bottom: 6px; }
-        .tab { flex: 1; background: rgba(255,255,255,0.05); color: #888; border: none; padding: 5px; border-radius: 4px; font-size: 0.55rem; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .tab { flex: 1; background: rgba(255,255,255,0.05); color: #888; border: none; padding: 6px; border-radius: 4px; font-size: 0.55rem; font-weight: 700; cursor: pointer; transition: 0.2s; }
         .tab.active { background: #fff; color: #000; }
 
         .g-type-row { display: flex; gap: 3px; margin-bottom: 6px; }
-        .g-btn { flex: 1; background: rgba(255,255,255,0.05); color: #888; border: 1px solid transparent; padding: 4px; border-radius: 4px; font-size: 0.5rem; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .g-btn { flex: 1; background: rgba(255,255,255,0.05); color: #888; border: 1px solid transparent; padding: 5px; border-radius: 4px; font-size: 0.5rem; font-weight: 700; cursor: pointer; transition: 0.2s; }
         .g-btn.active { background: rgba(0, 242, 254, 0.15); color: var(--neon); border-color: var(--neon); }
 
-        .card { background: rgba(255,255,255,0.04); border-radius: 6px; padding: 5px 6px; margin-bottom: 4px; border: 1px solid rgba(255,255,255,0.05); }
+        .card { background: rgba(255,255,255,0.04); border-radius: 6px; padding: 6px; margin-bottom: 4px; border: 1px solid rgba(255,255,255,0.05); }
         .card-title { color: #fff; font-size: 0.55rem; font-weight: bold; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px;}
         
-        /* MINI SLIDERS - Zero Lag */
-        input[type="range"] { -webkit-appearance: none; width: 100%; height: 3px; background: rgba(255,255,255,0.15); border-radius: 10px; margin: 3px 0; cursor: pointer; }
-        input[type="range"]:focus { outline: none; background: rgba(255,255,255,0.3); }
-        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 10px; height: 10px; background: #fff; border-radius: 50%; box-shadow: 0 0 4px var(--neon); cursor: pointer; }
-
-        .color-circle { width: 16px; height: 16px; border-radius: 50%; border: 1px solid #fff; position: relative; overflow: hidden; flex-shrink: 0; cursor: pointer;}
-        input[type="color"] { position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; cursor: pointer; border: none; padding: 0; margin: 0; }
+        /* TOUCH-ACTION: NONE completely stops slider lag/stickiness on mobile */
+        input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 5px; background: rgba(255,255,255,0.2); border-radius: 10px; margin: 4px 0; cursor: pointer; touch-action: none; }
+        input[type="range"]:focus { outline: none; background: rgba(255,255,255,0.4); }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; background: #fff; border-radius: 50%; box-shadow: 0 0 6px var(--neon); cursor: pointer; }
         
-        .btn-act { background: rgba(255,255,255,0.08); color: white; border: 1px solid rgba(255,255,255,0.1); padding: 5px; border-radius: 4px; font-size: 0.55rem; font-weight: 700; width: 100%; display: block; text-align: center; margin-bottom: 2px; cursor: pointer; transition: 0.2s;}
+        .color-circle { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid #fff; position: relative; overflow: hidden; flex-shrink: 0; cursor: pointer;}
+        input[type="color"] { position: absolute; top: -10px; left: -10px; width: 45px; height: 45px; cursor: pointer; border: none; padding: 0; margin: 0; }
+        
+        .btn-act { background: rgba(255,255,255,0.08); color: white; border: 1px solid rgba(255,255,255,0.1); padding: 6px; border-radius: 4px; font-size: 0.55rem; font-weight: 700; width: 100%; display: block; text-align: center; margin-bottom: 2px; cursor: pointer; transition: 0.2s;}
         .btn-act:hover { background: rgba(255,255,255,0.2); }
         
         #css-box { font-size: 0.45rem; color: var(--neon); background: rgba(0,0,0,0.6); padding: 6px; border-radius: 4px; word-break: break-all; font-family: monospace; border: 1px solid var(--border); white-space: pre-wrap; margin-top: 4px; max-height: 60px; overflow-y: auto;}
         
-        .val-badge { background: rgba(255,255,255,0.1); padding: 1px 3px; border-radius: 3px; font-family: monospace; font-size: 0.45rem; color: #ddd; min-width: 24px; text-align: center;}
+        .val-badge { background: rgba(255,255,255,0.1); padding: 2px 4px; border-radius: 3px; font-family: monospace; font-size: 0.45rem; color: #ddd; min-width: 28px; text-align: right; display: inline-block;}
         .lbl-sm { color:#888; font-size:0.5rem; font-weight:bold; width: 26px; display: inline-block; }
-        .row-sm { display: flex; align-items: center; gap: 4px; margin-bottom: 3px; }
+        .row-sm { display: flex; align-items: center; gap: 4px; margin-bottom: 4px; justify-content: space-between;}
         
-        .btn-del { color: #ff4757; font-size: 0.6rem; font-weight: bold; cursor: pointer; padding: 2px 4px; background: rgba(255,71,87,0.1); border-radius: 3px; border: none; }
+        .btn-del { color: #ff4757; font-size: 0.6rem; font-weight: bold; cursor: pointer; padding: 3px 6px; background: rgba(255,71,87,0.1); border-radius: 3px; border: none; }
     </style>
 </head>
 <body>
 
 <div id="bg-canvas" onclick="toggleUI()">
-    <div id="inner-bg"></div>
-    <div id="grid-overlay"></div>
-    <div id="dot-overlay"></div>
-    <div id="stripes-overlay"></div>
-    <div id="chess-overlay"></div>
-    <div id="scan-overlay"></div>
+    <div id="inner-bg" class="layer"></div>
+    <div id="grid-overlay" class="layer"></div>
+    <div id="dot-overlay" class="layer"></div>
+    <div id="stripes-overlay" class="layer"></div>
+    <div id="chess-overlay" class="layer"></div>
+    <div id="scan-overlay" class="layer"></div>
+    <div id="noise-overlay" class="layer"></div>
 </div>
 
-<div class="toolbox" id="toolbox">
+<div class="toolbox" id="toolbox" onclick="event.stopPropagation()" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()">
     <div class="action-row">
         <button id="css-btn" class="btn-tiny" onclick="copyCSS(event)" style="background: #fff; color: #000;">COPY CSS</button>
     </div>
@@ -119,7 +141,15 @@
     </div>
 
     <div id="fx" class="section" style="display:none;">
-        
+        <div class="card">
+            <div class="card-title">GRAIN / NOISE</div>
+            <div class="row-sm" style="margin-bottom:0;">
+                <span class="lbl-sm">OPC</span>
+                <input type="range" id="noise-op" min="0" max="100" value="30" oninput="gen()">
+                <span class="val-badge" id="noise-op-disp">30%</span>
+            </div>
+        </div>
+
         <div class="card">
             <div class="card-title">STRIPES</div>
             <div class="row-sm">
@@ -210,19 +240,25 @@
 </div>
 
 <script>
-    let layers = [
-        {h: "#ff007f", p: 0, o: 100},   
-        {h: "#7400b8", p: 50, o: 100},  
-        {h: "#00f2fe", p: 100, o: 100}  
-    ];
-    let currentType = 'linear';
+    // CACHING FOR SPEED
+    const DOM = {};
+    function $(id) { if(!DOM[id]) DOM[id] = document.getElementById(id); return DOM[id]; }
+    const rootStyle = document.documentElement.style;
 
-    function toggleUI() { document.getElementById('toolbox').classList.toggle('ui-hidden'); }
+    let layers = [
+        {h: "#0b2e4d", p: 0, o: 100},   
+        {h: "#01080e", p: 100, o: 100}  
+    ];
+    let currentType = 'radial';
+    let isPending = false;
+    let labelCache = {};
+
+    function toggleUI() { $('toolbox').classList.toggle('ui-hidden'); }
     
     function tab(e, name) {
         document.querySelectorAll('.section').forEach(x => x.style.display = 'none');
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        document.getElementById(name).style.display = 'block';
+        $(name).style.display = 'block';
         if(e) e.currentTarget.classList.add('active');
     }
 
@@ -230,8 +266,8 @@
         currentType = type;
         document.querySelectorAll('.g-btn').forEach(btn => btn.classList.remove('active'));
         document.querySelector(`.g-btn[onclick="setType('${type}')"]`).classList.add('active');
-        document.getElementById('tool-angle').disabled = (type === 'radial');
-        document.getElementById('tool-angle').style.opacity = (type === 'radial') ? 0.3 : 1;
+        $('tool-angle').disabled = (type === 'radial');
+        $('tool-angle').style.opacity = (type === 'radial') ? 0.3 : 1;
         gen();
     }
 
@@ -241,7 +277,7 @@
     }
 
     function render() {
-        const list = document.getElementById('layer-list');
+        const list = $('layer-list');
         list.innerHTML = '';
         layers.forEach((l, i) => {
             const div = document.createElement('div');
@@ -249,7 +285,9 @@
             div.style.display = 'flex'; div.style.alignItems = 'center'; div.style.gap = '6px';
             
             div.innerHTML = `
-                <div class="color-circle" style="background:${l.h}"><input type="color" value="${l.h}" oninput="upd(${i},'h',this.value)"></div>
+                <div id="circle-${i}" class="color-circle" style="background:${l.h}">
+                    <input type="color" value="${l.h}" oninput="upd(${i},'h',this.value)">
+                </div>
                 <div style="flex:1; display:flex; flex-direction:column; gap:2px;">
                     <div class="row-sm" style="margin:0;">
                         <span class="lbl-sm" style="width:20px;">POS</span>
@@ -264,131 +302,113 @@
             `;
             list.appendChild(div);
         });
+        
+        document.querySelectorAll('.g-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelector(`.g-btn[onclick="setType('${currentType}')"]`).classList.add('active');
+        
         gen();
     }
 
     function upd(i, k, v) { 
         layers[i][k] = (k === 'p' || k === 'o') ? parseFloat(v) : v; 
-        if(k === 'h') document.querySelectorAll('.color-circle')[i].style.background = v;
+        if(k === 'h') {
+            const circle = document.getElementById('circle-' + i);
+            if(circle) circle.style.background = v;
+        }
         gen(); 
     }
 
     function addLayer() { layers.push({h: "#ffffff", p: 100, o: 100}); render(); }
     function rem(i) { if(layers.length > 2) { layers.splice(i, 1); render(); } }
 
+    function updateLbl(id, val, suffix) {
+        const str = val + suffix;
+        if(labelCache[id] !== str) {
+            $(id).textContent = str;
+            labelCache[id] = str;
+        }
+    }
+
+    // THIS FUNCTION IS GPU-ACCELERATED & DEBOUNCED FOR ZERO LAG
     function gen() {
-        // Core Vals
-        const bl = document.getElementById('tool-blur').value;
-        const angle = document.getElementById('tool-angle').value;
-        
-        // Pattern Vals
-        const gridOp = document.getElementById('grid-op').value;
-        const gridTh = document.getElementById('grid-th').value;
-        const gridGap = document.getElementById('grid-gap').value;
-        
-        const dotOp = document.getElementById('dot-op').value;
-        const dotSz = document.getElementById('dot-sz').value;
-        const dotGap = document.getElementById('dot-gap').value;
+        if (!isPending) {
+            isPending = true;
+            requestAnimationFrame(() => {
+                
+                const bl = $('tool-blur').value;
+                const angle = $('tool-angle').value;
+                
+                const noiseOp = $('noise-op').value;
+                const gridOp = $('grid-op').value, gridTh = $('grid-th').value, gridGap = $('grid-gap').value;
+                const dotOp = $('dot-op').value, dotSz = $('dot-sz').value, dotGap = $('dot-gap').value;
+                const strpOp = $('strp-op').value, strpTh = $('strp-th').value, strpGap = $('strp-gap').value;
+                const chessOp = $('chess-op').value, chessSz = $('chess-sz').value;
+                const scanOp = $('scan-op').value, scanTh = $('scan-th').value;
+                
+                // Fast text updates
+                updateLbl('noise-op-disp', noiseOp, '%');
+                updateLbl('strp-op-disp', strpOp, '%'); updateLbl('strp-th-disp', strpTh, 'px'); updateLbl('strp-gap-disp', strpGap, 'px');
+                updateLbl('grid-op-disp', gridOp, '%'); updateLbl('grid-th-disp', gridTh, 'px'); updateLbl('grid-gap-disp', gridGap, 'px');
+                updateLbl('dot-op-disp', dotOp, '%'); updateLbl('dot-sz-disp', dotSz, 'px'); updateLbl('dot-gap-disp', dotGap, 'px');
+                updateLbl('chess-op-disp', chessOp, '%'); updateLbl('chess-sz-disp', chessSz, 'px');
+                updateLbl('scan-op-disp', scanOp, '%'); updateLbl('scan-th-disp', scanTh, 'px');
+                
+                // Extremely Fast CSS Variable Updates
+                rootStyle.setProperty('--blur', bl + 'px');
+                rootStyle.setProperty('--noise-op', noiseOp / 100);
+                
+                rootStyle.setProperty('--strp-op', strpOp / 100);
+                rootStyle.setProperty('--strp-th', strpTh + 'px');
+                rootStyle.setProperty('--strp-gap', strpGap + 'px');
 
-        const strpOp = document.getElementById('strp-op').value;
-        const strpTh = document.getElementById('strp-th').value;
-        const strpGap = document.getElementById('strp-gap').value;
+                rootStyle.setProperty('--grid-op', gridOp / 100);
+                rootStyle.setProperty('--grid-th', gridTh + 'px');
+                rootStyle.setProperty('--grid-gap', gridGap + 'px');
 
-        const chessOp = document.getElementById('chess-op').value;
-        const chessSz = document.getElementById('chess-sz').value;
+                rootStyle.setProperty('--dot-op', dotOp / 100);
+                rootStyle.setProperty('--dot-sz', dotSz + 'px');
+                rootStyle.setProperty('--dot-gap', dotGap + 'px');
 
-        const scanOp = document.getElementById('scan-op').value;
-        const scanTh = document.getElementById('scan-th').value;
-        
-        // Update Labels
-        document.getElementById('strp-op-disp').textContent = strpOp + '%';
-        document.getElementById('strp-th-disp').textContent = strpTh + 'px';
-        document.getElementById('strp-gap-disp').textContent = strpGap + 'px';
+                rootStyle.setProperty('--chess-op', chessOp / 100);
+                rootStyle.setProperty('--chess-sz', chessSz + 'px');
 
-        document.getElementById('grid-op-disp').textContent = gridOp + '%';
-        document.getElementById('grid-th-disp').textContent = gridTh + 'px';
-        document.getElementById('grid-gap-disp').textContent = gridGap + 'px';
-        
-        document.getElementById('dot-op-disp').textContent = dotOp + '%';
-        document.getElementById('dot-sz-disp').textContent = dotSz + 'px';
-        document.getElementById('dot-gap-disp').textContent = dotGap + 'px';
+                rootStyle.setProperty('--scan-op', scanOp / 100);
+                rootStyle.setProperty('--scan-th', scanTh + 'px');
+                
+                // Gradient String
+                const sorted = [...layers].sort((a,b) => a.p - b.p);
+                const cStr = sorted.map(l => `${hexToRgba(l.h, l.o)} ${l.p}%`).join(', ');
+                
+                let gradStr = '';
+                if(currentType === 'linear') gradStr = `linear-gradient(${angle}deg, ${cStr})`;
+                else if(currentType === 'radial') gradStr = `radial-gradient(circle, ${cStr})`;
+                else if(currentType === 'conic') gradStr = `conic-gradient(from ${angle}deg, ${cStr})`;
+                
+                $('inner-bg').style.backgroundImage = gradStr;
+                
+                // Output CSS
+                let css = `background: ${gradStr};\n`;
+                if (bl > 0) css += `filter: blur(${bl}px);\n`;
+                $('css-box').textContent = css;
 
-        document.getElementById('chess-op-disp').textContent = chessOp + '%';
-        document.getElementById('chess-sz-disp').textContent = chessSz + 'px';
-
-        document.getElementById('scan-op-disp').textContent = scanOp + '%';
-        document.getElementById('scan-th-disp').textContent = scanTh + 'px';
-        
-        // Gradient Construction
-        const sorted = [...layers].sort((a,b) => a.p - b.p);
-        const cStr = sorted.map(l => `${hexToRgba(l.h, l.o)} ${l.p}%`).join(', ');
-        
-        let gradStr = '';
-        if(currentType === 'linear') gradStr = `linear-gradient(${angle}deg, ${cStr})`;
-        else if(currentType === 'radial') gradStr = `radial-gradient(circle, ${cStr})`;
-        else if(currentType === 'conic') gradStr = `conic-gradient(from ${angle}deg, ${cStr})`;
-        
-        // Apply Background
-        const bg = document.getElementById('inner-bg');
-        bg.style.backgroundImage = gradStr;
-        if(bl > 0) bg.style.filter = `blur(${bl}px)`; else bg.style.filter = 'none';
-        
-        // Apply Stripes
-        const stripesOverlay = document.getElementById('stripes-overlay');
-        if(strpOp > 0) {
-            const gap = parseInt(strpGap); const thk = parseInt(strpTh);
-            stripesOverlay.style.backgroundImage = `repeating-linear-gradient(45deg, transparent, transparent ${gap}px, rgba(255,255,255, ${strpOp/100}) ${gap}px, rgba(255,255,255, ${strpOp/100}) ${gap + thk}px)`;
-        } else stripesOverlay.style.backgroundImage = 'none';
-
-        // Apply Grid
-        const gridOverlay = document.getElementById('grid-overlay');
-        if(gridOp > 0) {
-            gridOverlay.style.backgroundImage = `
-                linear-gradient(to right, rgba(255,255,255, ${gridOp/100}) ${gridTh}px, transparent ${gridTh}px),
-                linear-gradient(to bottom, rgba(255,255,255, ${gridOp/100}) ${gridTh}px, transparent ${gridTh}px)`;
-            gridOverlay.style.backgroundSize = `${gridGap}px ${gridGap}px`;
-        } else gridOverlay.style.backgroundImage = 'none';
-
-        // Apply Dots
-        const dotOverlay = document.getElementById('dot-overlay');
-        if(dotOp > 0) {
-            dotOverlay.style.backgroundImage = `radial-gradient(rgba(255,255,255, ${dotOp/100}) ${dotSz}px, transparent ${dotSz}px)`;
-            dotOverlay.style.backgroundSize = `${dotGap}px ${dotGap}px`;
-        } else dotOverlay.style.backgroundImage = 'none';
-
-        // Apply Chess
-        const chessOverlay = document.getElementById('chess-overlay');
-        if(chessOp > 0) {
-            chessOverlay.style.backgroundImage = `repeating-conic-gradient(rgba(255,255,255, ${chessOp/100}) 0% 25%, transparent 0% 50%)`;
-            chessOverlay.style.backgroundSize = `${chessSz}px ${chessSz}px`;
-        } else chessOverlay.style.backgroundImage = 'none';
-
-        // Apply Scanlines
-        const scanOverlay = document.getElementById('scan-overlay');
-        if(scanOp > 0) {
-            scanOverlay.style.backgroundImage = `linear-gradient(to bottom, rgba(0,0,0,${scanOp/100}) 50%, transparent 50%)`;
-            scanOverlay.style.backgroundSize = `100% ${scanTh}px`;
-        } else scanOverlay.style.backgroundImage = 'none';
-        
-        // CSS Box Logic
-        let css = `background: ${gradStr};\n`;
-        if (bl > 0) css += `filter: blur(${bl}px);\n`;
-        document.getElementById('css-box').textContent = css;
+                isPending = false;
+            });
+        }
     }
 
     function copyCSS(e) {
         e.stopPropagation();
         const textArea = document.createElement("textarea");
-        textArea.value = document.getElementById('css-box').textContent;
+        textArea.value = $('css-box').textContent;
         document.body.appendChild(textArea); textArea.select();
         document.execCommand('copy'); document.body.removeChild(textArea);
         
-        const b = document.getElementById('css-btn'); const oldHTML = b.innerHTML;
+        const b = $('css-btn'); const oldHTML = b.innerHTML;
         b.innerHTML = `COPIED`; b.style.background = "#22c55e"; b.style.color = "#fff";
         setTimeout(() => { b.innerHTML = oldHTML; b.style.background = "#fff"; b.style.color = "#000"; }, 1500);
     }
     
-    render();
+    window.onload = render;
 </script>
 </body>
 </html>
