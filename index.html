@@ -3,43 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pro Black Calculator - Proper Symbols</title>
+    <title>Pro Black Calculator</title>
+    
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#000000">
+    
+    <link rel="manifest" href="data:application/manifest+json,{%22name%22:%22Pro%20Black%20Calculator%22,%22short_name%22:%22Calculator%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22%23000000%22,%22theme_color%22:%22%23000000%22,%22icons%22:[{%22src%22:%22https://cdn-icons-png.flaticon.com/512/5309/5309779.png%22,%22sizes%22:%22512x512%22,%22type%22:%22image/png%22}]}">
+
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', Roboto, sans-serif;
+            font-family: 'Segoe UI', sans-serif;
             -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            touch-action: manipulation;
         }
 
         body {
             background: #000;
-            height: 100vh;
-            width: 100vw;
+            height: 100dvh; /* Dynamic height to fix scroll issue */
             display: flex;
             justify-content: center;
             align-items: center;
             overflow: hidden;
+            color: white;
         }
 
         .calculator {
             width: 100%;
-            max-width: 420px;
-            height: 100%;
-            background: #000;
+            max-width: 400px;
+            height: 100%; /* Puri screen cover karega */
             display: flex;
             flex-direction: column;
-            padding: 20px;
+            padding: 15px;
         }
 
         .display {
-            flex: 1;
+            flex: 1; /* Jitni jagah bachegi display le lega */
             display: flex;
             flex-direction: column;
             justify-content: flex-end;
             align-items: flex-end;
-            padding: 40px 15px;
+            padding-bottom: 20px;
         }
 
         #screen {
@@ -50,76 +58,88 @@
             text-align: right;
             color: #ffffff;
             font-size: 4.5rem;
-            font-weight: 200;
-            overflow: hidden;
+            font-weight: 300;
         }
 
-        .buttons {
+        .buttons-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 15px;
-            padding-bottom: 40px;
+            gap: 10px;
+            /* Bottom safe area for iPhones/Modern Androids */
+            padding-bottom: env(safe-area-inset-bottom, 10px);
         }
 
         .btn {
-            aspect-ratio: 1/1;
-            border-radius: 50%;
+            height: 75px; /* Fixed height for buttons */
+            border-radius: 50px;
             border: none;
             background: #1c1c1e;
-            color: #ffffff;
-            font-size: 1.8rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
+            color: #fff;
+            font-size: 1.6rem;
+            font-weight: 500;
             display: flex;
             justify-content: center;
             align-items: center;
-            user-select: none;
-            position: relative;
         }
 
-        .clear-btn {
+        .btn:active { background: #3a3a3c; }
+
+        .operator { background: #2c2c2e; color: #00ff9d; font-size: 2rem; }
+        .equal { background: #00ff9d; color: #000; font-weight: bold; }
+        
+        .special-btn {
             grid-column: span 2;
-            aspect-ratio: auto;
-            height: 70px;
-            border-radius: 50px;
             background: #2c2c2e;
             color: #ff4757;
             font-size: 0.9rem;
-            font-weight: 800;
-            letter-spacing: 1px;
-            display: flex;
-            gap: 10px;
+            font-weight: bold;
+            position: relative;
             overflow: hidden;
-            border: 1px solid rgba(255, 71, 87, 0.2);
         }
 
-        .clear-btn::before { content: '✕'; font-size: 1.2rem; }
-
-        .clear-btn .progress {
+        .progress-bar {
             position: absolute;
             bottom: 0;
             left: 0;
-            height: 5px;
+            height: 4px;
             background: #ff4757;
             width: 0%;
-            transition: width 0.3s linear;
         }
 
-        .btn:active { transform: scale(0.92); background: #3a3a3c; }
-
-        .operator {
-            background: #2c2c2e;
-            color: #00ff9d;
-            font-weight: 600;
-            font-size: 2rem;
+        /* Overlay Styles */
+        #install-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
         }
 
-        .equal { background: #00ff9d; color: #000; font-weight: bold; }
+        .install-box {
+            background: #1c1c1e;
+            padding: 25px;
+            border-radius: 20px;
+            text-align: center;
+            width: 85%;
+            border: 1px solid #333;
+        }
 
-        .back-text { font-size: 0.8rem; color: #ffa502; font-weight: bold; }
+        .install-box button {
+            background: #00ff9d;
+            border: none;
+            padding: 12px;
+            border-radius: 10px;
+            width: 100%;
+            margin-top: 15px;
+            font-weight: bold;
+        }
 
-        @media (min-width: 500px) {
-            .calculator { height: 90vh; border: 1px solid #222; border-radius: 40px; }
+        /* Landscape mode fix */
+        @media (max-height: 500px) {
+            .btn { height: 45px; font-size: 1.2rem; }
+            #screen { font-size: 2.5rem; }
         }
     </style>
 </head>
@@ -130,92 +150,94 @@
             <input type="text" id="screen" value="0" readonly>
         </div>
         
-        <div class="buttons">
-            <button class="btn clear-btn" id="cButton">
+        <div class="buttons-grid">
+            <button class="btn special-btn" id="cancelBtn">
                 CANCEL
-                <div class="progress" id="pBar"></div>
+                <div class="progress-bar" id="pBar"></div>
             </button>
-            <button class="btn operator" onclick="appendToScreen('÷')">÷</button>
-            <button class="btn operator" onclick="appendToScreen('×')">×</button>
+            <button class="btn operator" onclick="add('÷')">÷</button>
+            <button class="btn operator" onclick="add('×')">×</button>
             
-            <button class="btn" onclick="appendToScreen('7')">7</button>
-            <button class="btn" onclick="appendToScreen('8')">8</button>
-            <button class="btn" onclick="appendToScreen('9')">9</button>
-            <button class="btn operator" onclick="appendToScreen('-')">−</button>
+            <button class="btn" onclick="add('7')">7</button>
+            <button class="btn" onclick="add('8')">8</button>
+            <button class="btn" onclick="add('9')">9</button>
+            <button class="btn operator" onclick="add('-')">−</button>
             
-            <button class="btn" onclick="appendToScreen('4')">4</button>
-            <button class="btn" onclick="appendToScreen('5')">5</button>
-            <button class="btn" onclick="appendToScreen('6')">6</button>
-            <button class="btn operator" onclick="appendToScreen('+')">+</button>
+            <button class="btn" onclick="add('4')">4</button>
+            <button class="btn" onclick="add('5')">5</button>
+            <button class="btn" onclick="add('6')">6</button>
+            <button class="btn operator" onclick="add('+')">+</button>
             
-            <button class="btn" onclick="appendToScreen('1')">1</button>
-            <button class="btn" onclick="appendToScreen('2')">2</button>
-            <button class="btn" onclick="appendToScreen('3')">3</button>
-            <button class="btn equal" onclick="calculate()">=</button>
+            <button class="btn" onclick="add('1')">1</button>
+            <button class="btn" onclick="add('2')">2</button>
+            <button class="btn" onclick="add('3')">3</button>
+            <button class="btn equal" onclick="calc()">=</button>
             
-            <button class="btn" onclick="appendToScreen('0')">0</button>
-            <button class="btn" onclick="appendToScreen('.')">.</button>
-            <button class="btn back-text" style="grid-column: span 2; width: 100%; border-radius: 50px; aspect-ratio: auto;" onclick="backspace()">BACKSPACE</button>
+            <button class="btn" onclick="add('0')">0</button>
+            <button class="btn" onclick="add('.')">.</button>
+            <button class="btn" style="grid-column: span 2; color: #ffa502; font-size: 0.8rem;" onclick="back()">BACKSPACE</button>
+        </div>
+    </div>
+
+    <div id="install-overlay">
+        <div class="install-box">
+            <h2 style="color:#00ff9d">Install App</h2>
+            <p>Better experience ke liye install karein.</p>
+            <button id="realInstallBtn">INSTALL NOW</button>
         </div>
     </div>
 
     <script>
         const screen = document.getElementById('screen');
-        const cButton = document.getElementById('cButton');
-        const pBar = document.getElementById('pBar');
-        let pressTimer;
-        let isLongPress = false;
+        const overlay = document.getElementById('install-overlay');
+        const installBtn = document.getElementById('realInstallBtn');
+        let deferredPrompt;
 
-        function appendToScreen(value) {
-            if (screen.value === '0' || screen.value === 'Error') screen.value = value;
-            else screen.value += value;
-        }
+        function add(v) { if(screen.value === '0') screen.value = v; else screen.value += v; }
+        function back() { screen.value = screen.value.length > 1 ? screen.value.slice(0,-1) : '0'; }
+        function calc() { try { screen.value = eval(screen.value.replace(/×/g, '*').replace(/÷/g, '/')); } catch(e) { screen.value = "Error"; } }
 
-        function calculate() {
-            try {
-                // UI symbols ko math operators mein replace karne ka logic
-                let expression = screen.value.replace(/×/g, '*').replace(/÷/g, '/');
-                
-                const result = Function('"use strict";return (' + expression + ')')();
-                screen.value = Number.isInteger(result) ? result : result.toFixed(4).replace(/\.?0+$/, "");
-            } catch (e) {
-                screen.value = "Error";
-                setTimeout(() => screen.value = "0", 1000);
-            }
-        }
-
-        function backspace() {
-            if (screen.value.length > 1 && screen.value !== "Error") screen.value = screen.value.slice(0, -1);
-            else screen.value = "0";
-        }
-
-        // Fast Cancel Logic (0.3s)
-        const startPress = (e) => {
+        // PWA Install Logic
+        window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
-            isLongPress = false;
-            pBar.style.width = '100%'; 
-            pressTimer = setTimeout(() => {
-                isLongPress = true;
-                screen.value = "0";
-                screen.style.opacity = "0.3";
-                setTimeout(() => screen.style.opacity = "1", 100);
-            }, 300);
-        };
-
-        const endPress = (e) => {
-            clearTimeout(pressTimer);
-            pBar.style.width = '0%';
-            if (!isLongPress) backspace();
-        };
-
-        cButton.addEventListener('mousedown', startPress);
-        cButton.addEventListener('mouseup', endPress);
-        cButton.addEventListener('touchstart', startPress);
-        cButton.addEventListener('touchend', endPress);
-        cButton.addEventListener('mouseleave', () => {
-            clearTimeout(pressTimer);
-            pBar.style.width = '0%';
+            deferredPrompt = e;
+            overlay.style.display = 'flex';
         });
+
+        installBtn.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt = null;
+                overlay.style.display = 'none';
+            }
+        });
+
+        // Cancel Long Press
+        const cBtn = document.getElementById('cancelBtn');
+        const pBar = document.getElementById('pBar');
+        let timer;
+        
+        function start() { 
+            pBar.style.transition = 'width 0.4s linear';
+            pBar.style.width = '100%';
+            timer = setTimeout(() => { screen.value = "0"; }, 400);
+        }
+        function end() { 
+            clearTimeout(timer); 
+            pBar.style.transition = 'none';
+            pBar.style.width = '0%';
+        }
+
+        cBtn.addEventListener('touchstart', (e) => { e.preventDefault(); start(); });
+        cBtn.addEventListener('touchend', (e) => { e.preventDefault(); end(); });
+        cBtn.addEventListener('mousedown', start);
+        cBtn.addEventListener('mouseup', end);
+
+        if ('serviceWorker' in navigator) {
+            const sw = `self.addEventListener('fetch', function(event) {});`;
+            const blob = new Blob([sw], {type: 'text/javascript'});
+            navigator.serviceWorker.register(URL.createObjectURL(blob));
+        }
     </script>
 </body>
 </html>
