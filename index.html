@@ -12,236 +12,95 @@
     <link rel="icon" href="icon.jpg" type="image/jpeg">
     <link rel="apple-touch-icon" href="icon.jpg">
     
-    <link rel="manifest" href="data:application/manifest+json,{%22name%22:%22Pro%20Black%20Calculator%22,%22short_name%22:%22Calculator%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22%23000000%22,%22theme_color%22:%22%23000000%22,%22icons%22:[{%22src%22:%22icon.jpg%22,%22sizes%22:%22512x512%22,%22type%22:%22image/jpeg%22,%22purpose%22:%22any%20maskable%22}]}">
+    <link rel="manifest" href="data:application/manifest+json,{%22name%22:%22Pro%20Black%20Calculator%22,%22short_name%22:%22Calculator%22,%22start_url%22:%22index.html%22,%22display%22:%22standalone%22,%22background_color%22:%22%23000000%22,%22theme_color%22:%22%23000000%22,%22icons%22:[{%22src%22:%22icon.jpg%22,%22sizes%22:%22512x512%22,%22type%22:%22image/jpeg%22}]}">
 
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', sans-serif;
-            -webkit-tap-highlight-color: transparent;
-            user-select: none;
-            touch-action: manipulation;
-        }
-
-        body {
-            background: #000;
-            height: 100dvh; /* Dynamic height to fix scroll issue */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden;
-            color: white;
-        }
-
-        .calculator {
-            width: 100%;
-            max-width: 400px;
-            height: 100%; /* Puri screen cover karega */
-            display: flex;
-            flex-direction: column;
-            padding: 15px;
-        }
-
-        .display {
-            flex: 1; /* Jitni jagah bachegi display le lega */
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
-            align-items: flex-end;
-            padding-bottom: 20px;
-        }
-
-        #screen {
-            width: 100%;
-            background: transparent;
-            border: none;
-            outline: none;
-            text-align: right;
-            color: #ffffff;
-            font-size: 4.5rem;
-            font-weight: 300;
-        }
-
-        .buttons-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
-            /* Bottom safe area for iPhones/Modern Androids */
-            padding-bottom: env(safe-area-inset-bottom, 10px);
-        }
-
-        .btn {
-            height: 75px; /* Fixed height for buttons */
-            border-radius: 50px;
-            border: none;
-            background: #1c1c1e;
-            color: #fff;
-            font-size: 1.6rem;
-            font-weight: 500;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .btn:active { background: #3a3a3c; }
-
-        .operator { background: #2c2c2e; color: #00ff9d; font-size: 2rem; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; -webkit-tap-highlight-color: transparent; user-select: none; }
+        body { background: #000; height: 100dvh; display: flex; justify-content: center; align-items: center; overflow: hidden; color: white; }
+        .calculator { width: 100%; max-width: 400px; height: 100%; display: flex; flex-direction: column; padding: 20px; }
+        .display { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-end; padding-bottom: 20px; }
+        #screen { width: 100%; background: transparent; border: none; outline: none; text-align: right; color: #fff; font-size: 4.5rem; }
+        .buttons-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding-bottom: 20px; }
+        .btn { height: 75px; border-radius: 50px; border: none; background: #1c1c1e; color: #fff; font-size: 1.5rem; display: flex; justify-content: center; align-items: center; }
+        .operator { background: #2c2c2e; color: #00ff9d; }
         .equal { background: #00ff9d; color: #000; font-weight: bold; }
         
-        .special-btn {
-            grid-column: span 2;
-            background: #2c2c2e;
-            color: #ff4757;
-            font-size: 0.9rem;
-            font-weight: bold;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .progress-bar {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            height: 4px;
-            background: #ff4757;
-            width: 0%;
-        }
-
-        /* Overlay Styles */
-        #install-overlay {
+        /* Custom Install Pop-up Style */
+        #download-popup {
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-        }
-
-        .install-box {
+            bottom: -100%; /* Shuru mein chhupa rahega */
+            left: 0; width: 100%;
             background: #1c1c1e;
-            padding: 25px;
-            border-radius: 20px;
+            padding: 20px;
+            border-top: 2px solid #00ff9d;
+            border-radius: 20px 20px 0 0;
+            transition: 0.5s;
+            z-index: 9999;
             text-align: center;
-            width: 85%;
-            border: 1px solid #333;
         }
-
-        .install-box button {
-            background: #00ff9d;
-            border: none;
-            padding: 12px;
-            border-radius: 10px;
-            width: 100%;
-            margin-top: 15px;
-            font-weight: bold;
-        }
-
-        /* Landscape mode fix */
-        @media (max-height: 500px) {
-            .btn { height: 45px; font-size: 1.2rem; }
-            #screen { font-size: 2.5rem; }
-        }
+        #download-popup.show { bottom: 0; }
+        .dl-btn { background: #00ff9d; color: #000; border: none; padding: 12px 30px; border-radius: 10px; font-weight: bold; margin-top: 15px; width: 100%; }
     </style>
 </head>
 <body>
 
     <div class="calculator">
-        <div class="display">
-            <input type="text" id="screen" value="0" readonly>
-        </div>
-        
+        <div class="display"><input type="text" id="screen" value="0" readonly></div>
         <div class="buttons-grid">
-            <button class="btn special-btn" id="cancelBtn">
-                CANCEL
-                <div class="progress-bar" id="pBar"></div>
-            </button>
+            <button class="btn operator" style="grid-column: span 2;" onclick="screen.value='0'">C</button>
             <button class="btn operator" onclick="add('÷')">÷</button>
             <button class="btn operator" onclick="add('×')">×</button>
-            
-            <button class="btn" onclick="add('7')">7</button>
-            <button class="btn" onclick="add('8')">8</button>
-            <button class="btn" onclick="add('9')">9</button>
+            <button class="btn" onclick="add('7')">7</button><button class="btn" onclick="add('8')">8</button><button class="btn" onclick="add('9')">9</button>
             <button class="btn operator" onclick="add('-')">−</button>
-            
-            <button class="btn" onclick="add('4')">4</button>
-            <button class="btn" onclick="add('5')">5</button>
-            <button class="btn" onclick="add('6')">6</button>
+            <button class="btn" onclick="add('4')">4</button><button class="btn" onclick="add('5')">5</button><button class="btn" onclick="add('6')">6</button>
             <button class="btn operator" onclick="add('+')">+</button>
-            
-            <button class="btn" onclick="add('1')">1</button>
-            <button class="btn" onclick="add('2')">2</button>
-            <button class="btn" onclick="add('3')">3</button>
+            <button class="btn" onclick="add('1')">1</button><button class="btn" onclick="add('2')">2</button><button class="btn" onclick="add('3')">3</button>
             <button class="btn equal" onclick="calc()">=</button>
-            
-            <button class="btn" onclick="add('0')">0</button>
+            <button class="btn" style="grid-column: span 2;" onclick="add('0')">0</button>
             <button class="btn" onclick="add('.')">.</button>
-            <button class="btn" style="grid-column: span 2; color: #ffa502; font-size: 0.8rem;" onclick="back()">BACKSPACE</button>
+            <button class="btn" onclick="back()" style="color:#ffa502">DEL</button>
         </div>
     </div>
 
-    <div id="install-overlay">
-        <div class="install-box">
-            <h2 style="color:#00ff9d">Install App</h2>
-            <p>Better experience ke liye install karein.</p>
-            <button id="realInstallBtn">INSTALL NOW</button>
-        </div>
+    <div id="download-popup">
+        <img src="icon.jpg" width="60" style="border-radius: 10px; margin-bottom: 10px;">
+        <h3>Install Pro Calculator</h3>
+        <p style="color: #aaa; font-size: 0.9rem;">Ise app ki tarah use karne ke liye install karein</p>
+        <button class="dl-btn" id="installBtn">INSTALL NOW</button>
+        <p style="margin-top: 10px; font-size: 0.8rem;" onclick="hidePopup()">Nahi, baad mein</p>
     </div>
 
     <script>
         const screen = document.getElementById('screen');
-        const overlay = document.getElementById('install-overlay');
-        const installBtn = document.getElementById('realInstallBtn');
+        const popup = document.getElementById('download-popup');
         let deferredPrompt;
 
-        function add(v) { if(screen.value === '0') screen.value = v; else screen.value += v; }
-        function back() { screen.value = screen.value.length > 1 ? screen.value.slice(0,-1) : '0'; }
-        function calc() { try { screen.value = eval(screen.value.replace(/×/g, '*').replace(/÷/g, '/')); } catch(e) { screen.value = "Error"; } }
+        function add(v) { if(screen.value==='0') screen.value=v; else screen.value+=v; }
+        function back() { screen.value = screen.value.length>1 ? screen.value.slice(0,-1) : '0'; }
+        function calc() { try { screen.value = eval(screen.value.replace(/×/g,'*').replace(/÷/g,'/')); } catch(e){ screen.value="Error"; } }
+        function hidePopup() { popup.classList.remove('show'); }
 
-        // PWA Install Logic
+        // Jab browser install ke liye ready ho
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            overlay.style.display = 'flex';
+            // 3 second baad pop-up dikhao
+            setTimeout(() => { popup.classList.add('show'); }, 3000);
         });
 
-        installBtn.addEventListener('click', async () => {
+        document.getElementById('installBtn').addEventListener('click', async () => {
             if (deferredPrompt) {
                 deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') hidePopup();
                 deferredPrompt = null;
-                overlay.style.display = 'none';
             }
         });
 
-        // Cancel Long Press
-        const cBtn = document.getElementById('cancelBtn');
-        const pBar = document.getElementById('pBar');
-        let timer;
-        
-        function start() { 
-            pBar.style.transition = 'width 0.4s linear';
-            pBar.style.width = '100%';
-            timer = setTimeout(() => { screen.value = "0"; }, 400);
-        }
-        function end() { 
-            clearTimeout(timer); 
-            pBar.style.transition = 'none';
-            pBar.style.width = '0%';
-        }
-
-        cBtn.addEventListener('touchstart', (e) => { e.preventDefault(); start(); });
-        cBtn.addEventListener('touchend', (e) => { e.preventDefault(); end(); });
-        cBtn.addEventListener('mousedown', start);
-        cBtn.addEventListener('mouseup', end);
-
+        // Service Worker (Zaroori hai download pop-up ke liye)
         if ('serviceWorker' in navigator) {
-            const sw = `self.addEventListener('fetch', function(event) {});`;
-            const blob = new Blob([sw], {type: 'text/javascript'});
-            navigator.serviceWorker.register(URL.createObjectURL(blob));
+            navigator.serviceWorker.register('data:text/javascript;base64,' + btoa("self.addEventListener('fetch', (e) => {});"));
         }
-    
     </script>
 </body>
 </html>
